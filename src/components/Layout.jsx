@@ -1,5 +1,11 @@
 import { Outlet, Link } from "react-router-dom";
-import { FaHome, FaWarehouse, FaShoppingCart, FaUser } from "react-icons/fa"; // React Icons example
+import {
+  FaHome,
+  FaWarehouse,
+  FaShoppingCart,
+  FaUser,
+  FaChartLine,
+} from "react-icons/fa"; // React Icons example
 import Swal from "sweetalert2"; // For toasts (we'll use later)
 import { FaGavel } from "react-icons/fa6";
 
@@ -31,6 +37,11 @@ const Layout = () => {
           <Link to="/dashboard" className="btn btn-ghost">
             <FaHome /> Dashboard
           </Link>
+          {["Business", "Supplier"].includes(userRole) && (
+            <Link to="/warehouse-rental" className="btn btn-ghost">
+              <FaWarehouse /> Warehouse Rental
+            </Link>
+          )}
 
           {userRole === "Supplier" && (
             <>
@@ -39,6 +50,9 @@ const Layout = () => {
               </Link>
               <Link to="/marketplace" className="btn btn-ghost">
                 <FaGavel /> Marketplace
+              </Link>
+              <Link to="/supplier-performance" className="btn btn-ghost">
+                <FaChartLine /> Performance
               </Link>
               <Link to="/my-bids" className="btn btn-ghost">
                 My Bids

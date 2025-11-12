@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard"; // Placeholder for now
 import Inventory from "./pages/Inventory";
 import PurchaseRequests from "./pages/PurchaseRequests";
 import Marketplace from "./pages/Marketplace";
+import SupplierPerformance from "./pages/SupplierPerformance";
+import WarehouseRental from "./pages/WarehouseRental";
 
 const App = () => {
   return (
@@ -15,6 +17,8 @@ const App = () => {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/purchase-requests" element={<PurchaseRequests />} />
         <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/supplier-performance" element={<SupplierPerformance />} />
+        <Route path="/warehouse-rental" element={<WarehouseRental />} />
       </Route>
     </Routes>
   );

@@ -148,3 +148,105 @@ export const mockBidLeaderboard = (prId) => ({
     { rank: 1, supplier: 'ChemCoat', price: 46.0, delivery: '3 days', score: 90 },
   ],
 });
+
+
+export const mockSupplierPerformance = {
+  supplierId: 'SP001',
+  name: 'SteelPro Supplies',
+  rating: 4.7,
+  totalBids: 48,
+  wonBids: 21,
+  deliveryAccuracy: 92,
+  onTimeRate: 88,
+  averagePriceCompetitiveness: 94,
+  disputes: 1,
+  recentAwards: [
+    { prId: 101, product: 'Steel Bolts M8', date: '2025-11-11', price: 9.8, status: 'Delivered' },
+    { prId: 98, product: 'PVC Pipes', date: '2025-11-05', price: 12.3, status: 'Shipped' },
+  ],
+  monthlyTrend: [
+    { month: 'Aug', bids: 10, wins: 4 },
+    { month: 'Sep', bids: 12, wins: 5 },
+    { month: 'Oct', bids: 15, wins: 7 },
+    { month: 'Nov', bids: 11, wins: 5 },
+  ],
+};
+
+export const fetchMockSupplierPerformance = async () => {
+  await delay(900);
+  return mockSupplierPerformance;
+};
+
+// src/mocks/data.js (add to existing)
+
+export const mockWarehouseSpaces = [
+  {
+    id: 'WH001',
+    name: 'North Industrial Hub',
+    location: 'Chicago, IL',
+    capacity: 5000, // sq ft
+    available: 3200,
+    pricePerSqFt: 1.25,
+    provider: 'TechBuild Inc',
+    availability: { from: '2025-11-15', to: '2026-05-15' },
+    status: 'Available',
+    imageSeed: 'warehouse1',
+  },
+  {
+    id: 'WH002',
+    name: 'East Coast Storage',
+    location: 'Newark, NJ',
+    capacity: 8000,
+    available: 0,
+    pricePerSqFt: 1.10,
+    provider: 'MegaConstruct Ltd',
+    availability: { from: '2025-12-01', to: '2026-06-01' },
+    status: 'Fully Booked',
+    imageSeed: 'warehouse2',
+  },
+  {
+    id: 'WH003',
+    name: 'West Valley Depot',
+    location: 'Phoenix, AZ',
+    capacity: 4000,
+    available: 1500,
+    pricePerSqFt: 0.95,
+    provider: 'SteelPro Supplies',
+    availability: { from: '2025-11-20', to: '2026-04-20' },
+    status: 'Partially Available',
+    imageSeed: 'warehouse3',
+  },
+];
+
+export const mockRentalRequests = [
+  {
+    id: 'R001',
+    warehouseId: 'WH001',
+    requester: 'FastForge Ltd',
+    sqFt: 1000,
+    from: '2025-12-01',
+    to: '2026-03-01',
+    status: 'Pending',
+    totalCost: 3750,
+  },
+  {
+    id: 'R002',
+    warehouseId: 'WH003',
+    requester: 'SteelPro Supplies',
+    sqFt: 800,
+    from: '2025-11-25',
+    to: '2026-02-25',
+    status: 'Approved',
+    totalCost: 2280,
+  },
+];
+
+export const fetchMockWarehouseSpaces = async () => {
+  await delay(700);
+  return mockWarehouseSpaces;
+};
+
+export const fetchMockRentalRequests = async () => {
+  await delay(600);
+  return mockRentalRequests;
+};
