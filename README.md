@@ -1,5 +1,5 @@
 # BidStock
-
+```mermaid
 erDiagram
 
     %% ======================
@@ -235,3 +235,4 @@ erDiagram
     users ||--o{ disputes : "resolved by"
 
     users ||--o{ notifications : "receives"
+```
