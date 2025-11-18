@@ -5,13 +5,14 @@ import {
   FaShoppingCart,
   FaUser,
   FaChartLine,
+  FaShieldAlt,
 } from "react-icons/fa"; // React Icons example
 import Swal from "sweetalert2"; // For toasts (we'll use later)
 import { FaGavel } from "react-icons/fa6";
 
 const Layout = () => {
   // Mock user role (change based on login later)
-  const userRole = "Supplier"; // Or 'Supplier', 'Warehouse Provider', 'Admin'
+  const userRole = "Admin"; // Or 'Supplier', 'Warehouse Provider', 'Admin'
 
   const showToast = (message) => {
     Swal.fire({
@@ -42,7 +43,11 @@ const Layout = () => {
               <FaWarehouse /> Warehouse Rental
             </Link>
           )}
-
+          {userRole === "Admin" && (
+            <Link to="/admin" className="btn btn-ghost">
+              <FaShieldAlt /> Admin
+            </Link>
+          )}
           {userRole === "Supplier" && (
             <>
               <Link to="/bids" className="btn btn-ghost">

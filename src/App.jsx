@@ -7,6 +7,7 @@ import PurchaseRequests from "./pages/PurchaseRequests";
 import Marketplace from "./pages/Marketplace";
 import SupplierPerformance from "./pages/SupplierPerformance";
 import WarehouseRental from "./pages/WarehouseRental";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/supplier-performance" element={<SupplierPerformance />} />
         <Route path="/warehouse-rental" element={<WarehouseRental />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Route>
     </Routes>
   );
