@@ -1,238 +1,266 @@
-# BidStock
-```mermaid
-erDiagram
+# BidStock – Smart Procurement, Bidding & Warehouse Rental System
 
-    %% ======================
-    %% USERS & CORE ENTITIES
-    %% ======================
+BidStock is a Smart Inventory, Supplier Bidding and Warehouse Rental Management System with integrated payment processing. It automates procurement, reduces purchase costs, optimizes warehouse usage, and manages secure transactions with real-time tracking.
 
-    users {
-        INT id PK
-        VARCHAR email
-        VARCHAR password_hash
-        ENUM role
-        VARCHAR company_name
-        VARCHAR contact_person
-        VARCHAR phone
-        TEXT address
-        VARCHAR tax_id
-        VARCHAR business_license
-        BOOLEAN is_verified
-        DECIMAL rating
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+---
 
-    categories {
-        INT id PK
-        VARCHAR name
-        TEXT description
-        TIMESTAMP created_at
-    }
+## Project Overview
+BidStock automates procurement through reverse bidding, manages inventory levels, enables warehouse monetization, and ensures secure purchase and rental transactions.
 
-    products {
-        INT id PK
-        INT business_id FK
-        INT category_id FK
-        VARCHAR name
-        TEXT description
-        VARCHAR sku
-        DECIMAL unit_price
-        INT min_stock_level
-        INT max_stock_level
-        VARCHAR unit_of_measure
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+---
 
-    warehouses {
-        INT id PK
-        INT business_id FK
-        VARCHAR name
-        VARCHAR location
-        DECIMAL total_capacity
-        DECIMAL available_capacity
-        DECIMAL daily_rent_rate
-        BOOLEAN is_available
-        JSON facilities
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+## System Features
+- Automated procurement with reverse bidding
+- Real-time transactions for purchases and rentals
+- Secure payment flow with status validation
+- Supplier performance analytics
+- Warehouse space monetization
+- Integrated financial reports and tracking
 
-    inventory {
-        INT id PK
-        INT product_id FK
-        INT warehouse_id FK
-        INT quantity
-        TIMESTAMP last_restocked
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+---
 
-    purchase_requests {
-        INT id PK
-        INT product_id FK
-        INT business_id FK
-        INT quantity
-        ENUM priority
-        DATE required_delivery_date
-        ENUM status
-        TIMESTAMP bidding_start_time
-        TIMESTAMP bidding_end_time
-        TIMESTAMP created_at
-    }
+## Technology Stack
 
-    bids {
-        INT id PK
-        INT purchase_request_id FK
-        INT supplier_id FK
-        DECIMAL unit_price
-        DECIMAL total_amount
-        INT delivery_days
-        INT warranty_months
-        TEXT notes
-        ENUM status
-        DECIMAL score
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+Frontend: React, Tailwind CSS, DaisyUI  
+Backend: Node.js, Express.js  
+Database: MySQL  
+State Management: TanStack Query  
+Forms: React Hook Form  
+HTTP Client: Axios  
 
-    purchase_orders {
-        INT id PK
-        INT bid_id FK
-        INT business_id FK
-        INT supplier_id FK
-        VARCHAR po_number
-        DECIMAL total_amount
-        ENUM status
-        TIMESTAMP issue_date
-        DATE expected_delivery_date
-        DATE actual_delivery_date
-        TIMESTAMP created_at
-    }
+---
 
-    warehouse_rentals {
-        INT id PK
-        INT warehouse_id FK
-        INT supplier_id FK
-        INT business_id FK
-        DECIMAL capacity_rented
-        DECIMAL daily_rate
-        DATE start_date
-        DATE end_date
-        DECIMAL total_rent
-        ENUM status
-        TIMESTAMP created_at
-    }
+## User Roles and Responsibilities
 
-    transactions {
-        INT id PK
-        INT from_user_id FK
-        INT to_user_id FK
-        DECIMAL amount
-        ENUM type
-        INT purchase_order_id FK
-        INT warehouse_rental_id FK
-        ENUM status
-        VARCHAR payment_method
-        VARCHAR payment_intent_id
-        TIMESTAMP transaction_date
-        TIMESTAMP completed_at
-    }
+### Business / Buyer
+- Manages inventory and warehouse listings
+- Receives automated purchase requests
+- Evaluates supplier bids and selects winners
+- Processes purchase payments
+- Approves rental requests
+- Manages rental transactions
 
-    supplier_performance {
-        INT id PK
-        INT supplier_id FK
-        INT business_id FK
-        INT total_orders
-        INT completed_orders
-        DECIMAL on_time_delivery_rate
-        DECIMAL avg_rating
-        DECIMAL total_spent
-        TIMESTAMP last_order_date
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
+### Supplier
+- Submits competitive bids
+- Provides delivery, pricing, and warranty details
+- Accepts purchase orders and receives payments
+- Rents warehouse space and handles rental payments
+- Builds performance profile
 
-    order_reviews {
-        INT id PK
-        INT purchase_order_id FK
-        INT business_id FK
-        INT supplier_id FK
-        INT rating
-        TEXT review_text
-        TIMESTAMP created_at
-    }
+### Warehouse Provider
+- Lists warehouse spaces with pricing
+- Approves and rejects rental requests
+- Receives rental payments
+- Manages rental contracts
 
-    disputes {
-        INT id PK
-        INT purchase_order_id FK
-        INT warehouse_rental_id FK
-        INT raised_by_user_id FK
-        INT against_user_id FK
-        TEXT reason
-        ENUM status
-        TEXT resolution
-        INT resolved_by_admin_id FK
-        TIMESTAMP created_at
-        TIMESTAMP resolved_at
-    }
+### Admin
+- Verifies businesses and suppliers
+- Manages disputes and platform-wide issues
+- Oversees payment disputes and refunds
 
-    notifications {
-        INT id PK
-        INT user_id FK
-        VARCHAR title
-        TEXT message
-        ENUM type
-        ENUM related_entity_type
-        INT related_entity_id
-        BOOLEAN is_read
-        TIMESTAMP created_at
-    }
+---
 
-    %% ======================
-    %% RELATIONSHIPS
-    %% ======================
+# System Flow
 
-    users ||--o{ products : "owns"
-    categories ||--o{ products : "contains"
+## Login and Role-Based Dashboard
+Each user role gets access to a specific dashboard:
+- Business: Purchase requests, bids, payments
+- Supplier: Bidding, purchase orders, payments
+- Warehouse Provider: Listings, rental approvals, payments
+- Admin: Disputes, verifications, analytics
 
-    users ||--o{ warehouses : "owns"
+---
 
-    products ||--o{ inventory : "stocked in"
-    warehouses ||--o{ inventory : "stores"
+## Inventory Monitoring and Automatic Purchase Request
+- System checks stock levels
+- When below threshold, a purchase request is generated
+- Request is published to the bidding marketplace
+- Includes quantity, priority, and delivery deadline
 
-    products ||--o{ purchase_requests : "requested"
-    users ||--o{ purchase_requests : "business"
+---
 
-    purchase_requests ||--o{ bids : "offers"
-    users ||--o{ bids : "supplier"
+## Reverse-Bidding Marketplace
+Suppliers can submit:
+- Unit price
+- Delivery time
+- Warranty terms
 
-    bids ||--|{ purchase_orders : "converted to PO"
-    users ||--o{ purchase_orders : "business"
-    users ||--o{ purchase_orders : "supplier"
+Bids may be updated until deadline.
 
-    warehouses ||--o{ warehouse_rentals : "rented"
-    users ||--o{ warehouse_rentals : "supplier"
-    users ||--o{ warehouse_rentals : "business"
+---
 
-    users ||--o{ transactions : "payer"
-    users ||--o{ transactions : "receiver"
-    purchase_orders ||--o{ transactions : "includes"
-    warehouse_rentals ||--o{ transactions : "includes"
+## Weighted Scoring and Supplier Selection
+Final score calculation:
 
-    users ||--o{ supplier_performance : "supplier"
-    users ||--o{ supplier_performance : "business"
+- Price: 40 percent  
+- Delivery speed: 30 percent  
+- Supplier rating: 20 percent  
+- Sustainability: 10 percent
 
-    purchase_orders ||--o{ order_reviews : "reviewed"
-    users ||--o{ order_reviews : "business"
-    users ||--o{ order_reviews : "supplier"
+System recommends supplier with highest score; business selects final winner.
 
-    purchase_orders ||--o{ disputes : "disputed"
-    warehouse_rentals ||--o{ disputes : "disputed"
-    users ||--o{ disputes : "raised by"
-    users ||--o{ disputes : "against"
-    users ||--o{ disputes : "resolved by"
+---
 
-    users ||--o{ notifications : "receives"
+## Purchase Order and Transaction Flow
+
+Business selects winning bid  
+→ System creates Purchase Order (PO)  
+→ Transaction created with status pending  
+→ Supplier accepts PO  
+→ Business completes payment within 24 hours  
+→ Transaction becomes completed  
+→ Supplier ships order  
+→ Delivery confirmed  
+→ Inventory updated  
+→ Supplier performance updated
+
+```yaml
+Payment must be completed within 24 hours or the transaction is cancelled.
+---
+
+## Warehouse Rental and Payment Flow
+
+Supplier selects warehouse
+→ Submits rental request
+→ Warehouse provider approves or rejects request
+→ Transaction created with status pending
+→ Supplier completes payment within 24 hours
+→ Transaction becomes completed
+→ Rental period begins
+→ Expiry reminders sent automatically
+
+---
+
+## Transaction Management System
+- Supports purchase and rental transactions
+- Status includes pending, completed, failed, refunded
+- Automatic expiration for unpaid transactions
+- Disputes managed by admin
+- Maintains full audit trail
+
+---
+
+## Supplier Performance Tracking
+The system tracks:
+- Delivery accuracy
+- On-time rate
+- Price competitiveness
+- Payment reliability
+- Dispute history
+
+This data influences future bid scoring.
+
+---
+
+## Dispute and Refund System
+Covers:
+- Late or damaged deliveries
+- Warehouse rental issues
+- Payment or refund disputes
+
+Admin resolves disputes and updates ratings where needed.
+
+---
+
+# Notifications and Alerts
+Includes:
+- Low stock alerts
+- New bids
+- Bid deadline reminders
+- Payment due notifications
+- Transaction success and failure alerts
+- Rental expiry alerts
+- Delivery delay alerts
+
+---
+
+# Analytics and Dashboards
+Tracks:
+- Cost savings
+- Best suppliers
+- Delayed delivery rate
+- Purchase frequency
+- Transaction success rate
+- Warehouse rental revenue
+- Payment performance
+- Monthly financial reports
+
+---
+
+# Database Schema Overview
+
+## Core Entities
+- Users
+- Products and Inventory
+- Purchase Requests
+- Bids
+- Purchase Orders
+- Warehouses and Rentals
+- Transactions
+- Reviews and Disputes
+
+## Key Relationships
+- Users link to products, inventory, and warehouses
+- Purchase requests link to bids and purchase orders
+- Bids link to transactions
+- Warehouse rentals link to transactions
+- All entities include audit timestamps
+
+---
+
+# Transaction Security
+Features include:
+- Payment intent tracking
+- Status-based payment validation
+- Optional wallet balance checks
+- Automatic expiration of unpaid transactions
+- Refund and dispute handling
+
+---
+
+# Business Benefits
+
+## Reduced Purchase Cost
+Reverse bidding lowers pricing and ensures budget-friendly procurement.
+
+## Smart Decision Making
+Weighted scoring and analytics improve supplier selection.
+
+## Optimized Storage
+Warehouse rental converts unused space into revenue.
+
+## Improved Supplier Quality
+Performance tracking ensures reliability.
+
+## Automated Payments
+Integrated payment workflow reduces manual work.
+
+## Business Friendly
+Real-time visibility into transactions and procurement.
+
+---
+
+# Implementation Priority
+
+## Phase 1: Core Platform
+- Authentication and roles
+- Products and inventory
+- Auto purchase requests
+- Bidding marketplace
+- Basic transaction schema
+
+## Phase 2: Transaction System
+- Purchase order workflow
+- Rental approval system
+- Payment tracking
+- Transaction history
+- Notifications
+
+## Phase 3: Advanced Features
+- Supplier analytics
+- Advanced reporting
+- Dispute system
+- Stripe or Razorpay integration
+- Real-time dashboards
+
 ```
