@@ -116,6 +116,7 @@ Business selects winning bid
 
 ```yaml
 Payment must be completed within 24 hours or the transaction is cancelled.
+```
 ---
 
 ## Warehouse Rental and Payment Flow
@@ -262,5 +263,3 @@ Real-time visibility into transactions and procurement.
 - Dispute system
 - Stripe or Razorpay integration
 - Real-time dashboards
-
-```
