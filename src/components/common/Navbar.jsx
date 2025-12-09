@@ -1,35 +1,35 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
-import { Link } from 'react-router';
-import Logo from './logo';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import { Link } from "react-router";
+import Logo from "./Logo";
 
 const navItems = [
-  { name: 'Home', href: '/' },
+  { name: "Home", href: "/" },
   {
-    name: 'Marketplace', // Renamed from 'Products' to cover both Auctions & Warehouses
-    href: '/marketplace',
+    name: "Marketplace", // Renamed from 'Products' to cover both Auctions & Warehouses
+    href: "/marketplace",
     hasDropdown: true,
     dropdownItems: [
-      { 
-        name: 'Live Auctions', 
-        href: '/auctions', 
-        description: 'Bid on wholesale inventory in real-time' 
+      {
+        name: "Live Auctions",
+        href: "/auctions",
+        description: "Bid on wholesale inventory in real-time",
       },
-      { 
-        name: 'Warehouse Storage', 
-        href: '/warehouses', 
-        description: 'Rent commercial space for your stock' 
+      {
+        name: "Warehouse Storage",
+        href: "/warehouses",
+        description: "Rent commercial space for your stock",
       },
-      { 
-        name: 'Sell Inventory', 
-        href: '/suppliers', 
-        description: 'List your products for bulk auction' 
+      {
+        name: "Sell Inventory",
+        href: "/suppliers",
+        description: "List your products for bulk auction",
       },
     ],
   },
-  { name: 'Pricing', href: '/pricing' },
-  { name: 'About', href: '/about' },
+  { name: "Pricing", href: "/pricing" },
+  { name: "About", href: "/about" },
 ];
 
 export default function Navbar() {
@@ -39,8 +39,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
@@ -49,18 +49,16 @@ export default function Navbar() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       style={{
-        backdropFilter: isScrolled ? 'blur(16px)' : 'none',
-        backgroundColor: isScrolled
-          ? 'rgba(255,255,255,0.85)'
-          : 'transparent',
-        boxShadow: isScrolled ? '0 8px 32px rgba(0,0,0,0.08)' : 'none',
+        backdropFilter: isScrolled ? "blur(16px)" : "none",
+        backgroundColor: isScrolled ? "rgba(255,255,255,0.85)" : "transparent",
+        boxShadow: isScrolled ? "0 8px 32px rgba(0,0,0,0.08)" : "none",
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 lg:h-20 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <Logo/>
+            <Logo />
           </Link>
 
           {/* Desktop Nav */}
@@ -149,7 +147,7 @@ export default function Navbar() {
             <motion.div
               className="lg:hidden mt-4 rounded-xl border bg-white shadow-xl overflow-hidden"
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
               {navItems.map((item) => (

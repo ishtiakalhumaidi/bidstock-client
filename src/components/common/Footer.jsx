@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router";
 import { Sparkles, Github, Twitter, Linkedin } from "lucide-react";
-import Logo from "./logo";
+import Logo from "./Logo";
 
 export default function Footer() {
   // Converted the specific CSS gradients to a React style object
