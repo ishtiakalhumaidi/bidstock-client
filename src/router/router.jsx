@@ -1,11 +1,11 @@
 import { createBrowserRouter } from "react-router";
-import MainLayout from "../layouts/mainLayout";
 import Home from "../pages/landing/Home";
 import AuthLayout from "../layouts/AuthLayout";
 import SignIn from "../pages/auth/SignIn";
 import SignUp from "../pages/auth/SignUp";
 import NotFound from "../components/error/NotFound";
 import Pricing from "../pages/pricing/Pricing";
+import MainLayout from "../layouts/MainLayout";
 
 export const router = createBrowserRouter([
   {
