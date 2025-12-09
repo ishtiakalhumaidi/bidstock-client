@@ -130,6 +130,16 @@ export default function Navbar() {
                 <ArrowRight size={16} />
               </Link>
             </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full
+                  bg-gradient-to-r from-rose-500 to-rose-700
+                  px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
+              >
+                Dashboard
+              </Link>
+            </motion.div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -164,7 +174,7 @@ export default function Navbar() {
               {/* Mobile Actions ✅ */}
               <div className="border-t p-4 space-y-3">
                 <Link
-                  to="/login"
+                  to="/auth/signin"
                   className="block w-full text-center rounded-lg py-2 
                     font-medium text-zinc-700 hover:bg-zinc-100"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -173,13 +183,22 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  to="/signup"
+                  to="/auth/signup"
                   className="block w-full text-center rounded-lg
                     bg-gradient-to-r from-rose-500 to-rose-700
                     py-2.5 font-medium text-white shadow hover:shadow-lg"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Get Started
+                </Link>
+                <Link
+                  to="/dashboard"
+                  className="block w-full text-center rounded-lg
+                    bg-gradient-to-r from-rose-500 to-rose-700
+                    py-2.5 font-medium text-white shadow hover:shadow-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dashboard
                 </Link>
               </div>
             </motion.div>

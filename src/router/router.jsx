@@ -6,6 +6,7 @@ import SignUp from "../pages/auth/SignUp";
 import NotFound from "../components/error/NotFound";
 import Pricing from "../pages/pricing/Pricing";
 import MainLayout from "../layouts/MainLayout";
+import DashboardLayout from "../layouts/DashboardLayout";
 
 export const router = createBrowserRouter([
   {
@@ -18,9 +19,9 @@ export const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: 'pricing',
-        element:<Pricing/>
-      }
+        path: "pricing",
+        element: <Pricing />,
+      },
     ],
   },
   {
@@ -38,5 +39,11 @@ export const router = createBrowserRouter([
         element: <SignUp />,
       },
     ],
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardLayout />,
+
+    errorElement: <NotFound />,
   },
 ]);
