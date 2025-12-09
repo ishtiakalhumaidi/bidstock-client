@@ -1,81 +1,193 @@
-import React from "react";
-import Logo from "./logo";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
+import Logo from './logo';
 
-const Navbar = () => {
+const navItems = [
+  { name: 'Home', href: '/' },
+  {
+    name: 'Marketplace', // Renamed from 'Products' to cover both Auctions & Warehouses
+    href: '/marketplace',
+    hasDropdown: true,
+    dropdownItems: [
+      { 
+        name: 'Live Auctions', 
+        href: '/auctions', 
+        description: 'Bid on wholesale inventory in real-time' 
+      },
+      { 
+        name: 'Warehouse Storage', 
+        href: '/warehouses', 
+        description: 'Rent commercial space for your stock' 
+      },
+      { 
+        name: 'Sell Inventory', 
+        href: '/suppliers', 
+        description: 'List your products for bulk auction' 
+      },
+    ],
+  },
+  { name: 'Pricing', href: '/pricing' },
+  { name: 'About', href: '/about' },
+];
+
+export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <div className="navbar bg-base-100 shadow-sm">
-      <div className="navbar-start">
-        <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              {" "}
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h8m-8 6h16"
-              />{" "}
-            </svg>
-          </div>
-          <ul
-            tabIndex="-1"
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
-          >
-            <li>
-              <a>Item 1</a>
-            </li>
-            <li>
-              <a>Parent</a>
-              <ul className="p-2">
-                <li>
-                  <a>Submenu 1</a>
-                </li>
-                <li>
-                  <a>Submenu 2</a>
-                </li>
-              </ul>
-            </li>
-            <li>
-              <a>Item 3</a>
-            </li>
-          </ul>
-        </div>
-      <Logo/>
-      </div>
-      <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1">
-          <li>
-            <a>Item 1</a>
-          </li>
-          <li>
-            <details>
-              <summary>Parent</summary>
-              <ul className="p-2 bg-base-100 w-40 z-1">
-                <li>
-                  <a>Submenu 1</a>
-                </li>
-                <li>
-                  <a>Submenu 2</a>
-                </li>
-              </ul>
-            </details>
-          </li>
-          <li>
-            <a>Item 3</a>
-          </li>
-        </ul>
-      </div>
-      <div className="navbar-end">
-        <a className="btn">Sign In</a>
-      </div>
-    </div>
-  );
-};
+    <motion.header
+      className="fixed top-0 inset-x-0 z-50"
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      style={{
+        backdropFilter: isScrolled ? 'blur(16px)' : 'none',
+        backgroundColor: isScrolled
+          ? 'rgba(255,255,255,0.85)'
+          : 'transparent',
+        boxShadow: isScrolled ? '0 8px 32px rgba(0,0,0,0.08)' : 'none',
+      }}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 lg:h-20 items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <Logo/>
+          </Link>
 
-export default Navbar;
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-8">
+            {navItems.map((item) => (
+              <div
+                key={item.name}
+                className="relative"
+                onMouseEnter={() =>
+                  item.hasDropdown && setActiveDropdown(item.name)
+                }
+                onMouseLeave={() => setActiveDropdown(null)}
+              >
+                <Link
+                  to={item.href}
+                  className="flex items-center gap-1 font-medium text-zinc-700 hover:text-rose-600 transition"
+                >
+                  {item.name}
+                  {item.hasDropdown && <ChevronDown size={16} />}
+                </Link>
+
+                {/* Dropdown */}
+                <AnimatePresence>
+                  {item.hasDropdown && activeDropdown === item.name && (
+                    <motion.div
+                      className="absolute top-full mt-3 w-64 rounded-xl border bg-white shadow-xl"
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                    >
+                      {item.dropdownItems.map((sub) => (
+                        <Link
+                          key={sub.name}
+                          to={sub.href}
+                          className="block px-4 py-3 hover:bg-zinc-100 transition"
+                        >
+                          <div className="font-medium text-zinc-900">
+                            {sub.name}
+                          </div>
+                          <div className="text-sm text-zinc-500">
+                            {sub.description}
+                          </div>
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </nav>
+
+          {/* Desktop Actions ✅ */}
+          <div className="hidden lg:flex items-center gap-4">
+            <Link
+              to="/auth/signin"
+              className="font-medium text-zinc-700 hover:text-rose-600 transition"
+            >
+              Sign In
+            </Link>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                to="/auth/signup"
+                className="inline-flex items-center gap-2 rounded-full
+                  bg-gradient-to-r from-rose-500 to-rose-700
+                  px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
+              >
+                Get Started
+                <ArrowRight size={16} />
+              </Link>
+            </motion.div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="lg:hidden rounded-lg p-2 hover:bg-zinc-100"
+            onClick={() => setIsMobileMenuOpen((v) => !v)}
+          >
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="lg:hidden mt-4 rounded-xl border bg-white shadow-xl overflow-hidden"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className="block px-4 py-3 font-medium text-zinc-700 hover:bg-zinc-100"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+
+              {/* Mobile Actions ✅ */}
+              <div className="border-t p-4 space-y-3">
+                <Link
+                  to="/login"
+                  className="block w-full text-center rounded-lg py-2 
+                    font-medium text-zinc-700 hover:bg-zinc-100"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+
+                <Link
+                  to="/signup"
+                  className="block w-full text-center rounded-lg
+                    bg-gradient-to-r from-rose-500 to-rose-700
+                    py-2.5 font-medium text-white shadow hover:shadow-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.header>
+  );
+}
