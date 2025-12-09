@@ -20,7 +20,7 @@ export default function FooterCTA() {
               Join the fastest-growing B2B auction network. List your inventory or find warehouse space in minutes.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/signup" className="w-full sm:w-auto rounded-full bg-rose-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500 hover:-translate-y-0.5 transition-all duration-200">
+              <Link to="/auth/signup" className="w-full sm:w-auto rounded-full bg-rose-600 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500 hover:-translate-y-0.5 transition-all duration-200">
                 Create Free Account
               </Link>
               <Link to="/contact" className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm hover:bg-zinc-800 transition-colors duration-200">
