@@ -13,6 +13,8 @@ import AddWarehouse from "../pages/dashboard/warehouse/AddWarehouse";
 import MyWarehouses from "../pages/dashboard/warehouse/MyWarehouses";
 import AllWarehouses from "../pages/dashboard/common/AllWarehouses";
 import MyRents from "../pages/dashboard/seller/MyRents";
+import MyInventory from "../pages/dashboard/inventory/MyInventory";
+import MyTransactions from "../pages/dashboard/transactions/MyTransactions";
 
 export const router = createBrowserRouter([
   {
@@ -75,6 +77,14 @@ export const router = createBrowserRouter([
       {
         path: "my-rents",
         element: <MyRents />,
+      },
+      {
+        path: "my-inventories",
+        element: <MyInventory />,
+      },
+      {
+        path: "my-transactions",
+        element: <MyTransactions />,
       },
     ],
   },

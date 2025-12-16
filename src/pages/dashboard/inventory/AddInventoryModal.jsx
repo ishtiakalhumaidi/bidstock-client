@@ -17,7 +17,6 @@ export default function AddInventoryModal({ product, isOpen, onClose }) {
     },
     enabled: isOpen, 
   });
-console.log(rents)
   const mutation = useMutation({
     mutationFn: (data) => {
       return api.post('/inventories', {
@@ -91,7 +90,7 @@ console.log(rents)
                   {...register("warehouse_id", { required: "Please select a warehouse" })}
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none appearance-none"
                 >
-                  <option value="">Choose a Warehouse</option>
+                  <option value="">-- Choose a Facility --</option>
                   {rents.map(rent => (
                     <option key={rent.rent_id} value={rent.warehouse_id}>
                       {rent.warehouse_location} (Cap: {rent.warehouse_capacity})
@@ -127,7 +126,7 @@ console.log(rents)
                <label className="text-sm font-semibold text-zinc-700">Max Cap</label>
                <input 
                  type="number" 
-                 {...register("max_stock_level", { value: rents.warehouse_capacity })}
+                 {...register("max_stock_level", { value: 1000 })}
                  className="w-full px-3 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
                  placeholder="1000"
                />
