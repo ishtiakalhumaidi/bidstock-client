@@ -4,8 +4,22 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import Logo from "../../components/common/Logo";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
+import api from "../../api/auth.api";
 
 export default function SignIn() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const mutation = useMutation({
+    mutationFn: (data) => api.post("/auth/signin", data),
+    onSuccess: (res) => {
+      // console.log(res.data.token)
+      login(res.data.data.user, res.data.data.token);
+      navigate("/dashboard");
+    },
+  });
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -14,9 +28,7 @@ export default function SignIn() {
   } = useForm();
 
   const onSubmit = async (data) => {
-    // Simulate API call
-    console.log("Login Data:", data);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    mutation.mutate(data);
   };
 
   return (
@@ -121,16 +133,21 @@ export default function SignIn() {
                 {errors.password.message}
               </p>
             )}
+            {mutation.isError && (
+              <p className="text-sm text-red-600 text-center">
+                {mutation.error.response?.data?.message || "Login failed"}
+              </p>
+            )}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={mutation.isPending}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Signing in..." : "Sign In"}
-            {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+            {mutation.isPending ? "Signing in..." : "Sign In"}
+            {!mutation.isPending && <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
 

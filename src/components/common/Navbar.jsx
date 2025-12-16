@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import { Menu, X, ChevronDown, ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import Logo from "./Logo";
+import { useAuth } from "../../hooks/useAuth";
+
 
 const navItems = [
   { name: "Home", href: "/" },
   {
-    name: "Marketplace", // Renamed from 'Products' to cover both Auctions & Warehouses
+    name: "Marketplace",
     href: "/marketplace",
     hasDropdown: true,
     dropdownItems: [
@@ -33,6 +35,7 @@ const navItems = [
 ];
 
 export default function Navbar() {
+  const { isAuthenticated } = useAuth(); 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -95,12 +98,8 @@ export default function Navbar() {
                           to={sub.href}
                           className="block px-4 py-3 hover:bg-zinc-100 transition"
                         >
-                          <div className="font-medium text-zinc-900">
-                            {sub.name}
-                          </div>
-                          <div className="text-sm text-zinc-500">
-                            {sub.description}
-                          </div>
+                          <div className="font-medium text-zinc-900">{sub.name}</div>
+                          <div className="text-sm text-zinc-500">{sub.description}</div>
                         </Link>
                       ))}
                     </motion.div>
@@ -110,36 +109,41 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop Actions ✅ */}
+          {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-4">
-            <Link
-              to="/auth/signin"
-              className="font-medium text-zinc-700 hover:text-rose-600 transition"
-            >
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center gap-2 rounded-full
+                    bg-gradient-to-r from-rose-500 to-rose-700
+                    px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
+                >
+                  Dashboard
+                </Link>
+              </motion.div>
+            ) : (
+              <>
+                <Link
+                  to="/auth/signin"
+                  className="font-medium text-zinc-700 hover:text-rose-600 transition"
+                >
+                  Sign In
+                </Link>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/auth/signup"
-                className="inline-flex items-center gap-2 rounded-full
-                  bg-gradient-to-r from-rose-500 to-rose-700
-                  px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
-              >
-                Get Started
-                <ArrowRight size={16} />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full
-                  bg-gradient-to-r from-rose-500 to-rose-700
-                  px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
-              >
-                Dashboard
-              </Link>
-            </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link
+                    to="/auth/signup"
+                    className="inline-flex items-center gap-2 rounded-full
+                      bg-gradient-to-r from-rose-500 to-rose-700
+                      px-6 py-2.5 text-white font-medium shadow-md hover:shadow-lg"
+                  >
+                    Get Started
+                    <ArrowRight size={16} />
+                  </Link>
+                </motion.div>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -171,35 +175,40 @@ export default function Navbar() {
                 </Link>
               ))}
 
-              {/* Mobile Actions ✅ */}
+              {/* Mobile Actions */}
               <div className="border-t p-4 space-y-3">
-                <Link
-                  to="/auth/signin"
-                  className="block w-full text-center rounded-lg py-2 
-                    font-medium text-zinc-700 hover:bg-zinc-100"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+                {isAuthenticated ? (
+                  <Link
+                    to="/dashboard"
+                    className="block w-full text-center rounded-lg
+                      bg-gradient-to-r from-rose-500 to-rose-700
+                      py-2.5 font-medium text-white shadow hover:shadow-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/auth/signin"
+                      className="block w-full text-center rounded-lg py-2 
+                        font-medium text-zinc-700 hover:bg-zinc-100"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
 
-                <Link
-                  to="/auth/signup"
-                  className="block w-full text-center rounded-lg
-                    bg-gradient-to-r from-rose-500 to-rose-700
-                    py-2.5 font-medium text-white shadow hover:shadow-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Get Started
-                </Link>
-                <Link
-                  to="/dashboard"
-                  className="block w-full text-center rounded-lg
-                    bg-gradient-to-r from-rose-500 to-rose-700
-                    py-2.5 font-medium text-white shadow hover:shadow-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+                    <Link
+                      to="/auth/signup"
+                      className="block w-full text-center rounded-lg
+                        bg-gradient-to-r from-rose-500 to-rose-700
+                        py-2.5 font-medium text-white shadow hover:shadow-lg"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Get Started
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.div>
           )}

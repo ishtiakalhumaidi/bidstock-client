@@ -12,20 +12,37 @@ import {
   Package,
   Warehouse,
   Briefcase,
+  Phone,
+  Image as ImageIcon,
 } from "lucide-react";
 import Logo from "../../components/common/Logo";
+
+
+import { useNavigate } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
+import api from "../../api/auth.api";
+import axios from "axios";
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("buyer");
 
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+
+
   const {
     register,
     handleSubmit,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
-    defaultValues: { role: "buyer" },
+    defaultValues: { 
+      role: "buyer", 
+      status: "active", // Default status sent to backend
+      user_image: "" 
+    },
   });
 
   const handleRoleSelect = (role) => {
@@ -34,9 +51,17 @@ export default function SignUp() {
   };
 
   const onSubmit = async (data) => {
-    console.log("Registration Data:", data);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  };
+  const { terms, ...rest } = data;
+console.log(rest)
+  try {
+    // Step 1: Signup
+    await axios.post("http://localhost:5000/api/v1/auth/signup", rest);
+    navigate("/auth/signin");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -49,14 +74,12 @@ export default function SignUp() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        // CHANGED: max-w-2xl -> max-w-xl to match SignIn
         className="relative z-10 w-full max-w-xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl p-8 sm:p-10"
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4 group">
             <Logo />
           </Link>
-          {/* Header already text-3xl */}
           <h2 className="text-3xl font-bold text-zinc-900">Create Account</h2>
           <p className="text-zinc-500 mt-2">
             Join the marketplace for modern supply chains
@@ -89,11 +112,11 @@ export default function SignUp() {
                 />
               </div>
 
-              {/* Supplier Option */}
+              {/* seller Option */}
               <div
-                onClick={() => handleRoleSelect("supplier")}
+                onClick={() => handleRoleSelect("seller")}
                 className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 transition-all ${
-                  selectedRole === "supplier"
+                  selectedRole === "seller"
                     ? "border-rose-500 bg-rose-50 text-rose-700"
                     : "border-zinc-100 bg-white text-zinc-500 hover:border-rose-200"
                 }`}
@@ -102,11 +125,11 @@ export default function SignUp() {
                 <span className="text-sm font-bold">Sell Stock</span>
               </div>
 
-              {/* Warehouse Option */}
+              {/* Warehouse_owner Option */}
               <div
-                onClick={() => handleRoleSelect("warehouse")}
+                onClick={() => handleRoleSelect("warehouse_owner")}
                 className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 transition-all ${
-                  selectedRole === "warehouse"
+                  selectedRole === "warehouse_owner"
                     ? "border-rose-500 bg-rose-50 text-rose-700"
                     : "border-zinc-100 bg-white text-zinc-500 hover:border-rose-200"
                 }`}
@@ -117,6 +140,7 @@ export default function SignUp() {
             </div>
           </div>
 
+          {/* Row 1: Name and Phone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Full Name */}
             <div className="space-y-1.5">
@@ -143,36 +167,77 @@ export default function SignUp() {
               )}
             </div>
 
-            {/* Email */}
+            {/* Phone Number */}
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-zinc-700 ml-1">
-                Email Address
+                Phone Number
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
+                <Phone className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
                 <input
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
-                  })}
-                  type="email"
-                  placeholder="john@company.com"
+                  {...register("phone", { required: "Phone is required" })}
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
                   className={`w-full pl-11 pr-4 py-3 rounded-xl border ${
-                    errors.email
+                    errors.phone
                       ? "border-red-500"
                       : "border-zinc-200 focus:border-rose-500 focus:ring-rose-500"
                   } bg-white focus:ring-2 focus:outline-none transition-all`}
                 />
               </div>
-              {errors.email && (
+              {errors.phone && (
                 <p className="text-xs text-red-500 font-medium ml-1">
-                  {errors.email.message}
+                  {errors.phone.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Password */}
+          {/* Row 2: Email */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-zinc-700 ml-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
+              <input
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+                })}
+                type="email"
+                placeholder="john@company.com"
+                className={`w-full pl-11 pr-4 py-3 rounded-xl border ${
+                  errors.email
+                    ? "border-red-500"
+                    : "border-zinc-200 focus:border-rose-500 focus:ring-rose-500"
+                } bg-white focus:ring-2 focus:outline-none transition-all`}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-xs text-red-500 font-medium ml-1">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          {/* Row 3: User Image URL */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-zinc-700 ml-1">
+              Profile Image URL
+            </label>
+            <div className="relative">
+              <ImageIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
+              <input
+                {...register("user_image")}
+                type="url"
+                placeholder="https://example.com/my-photo.jpg"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Password */}
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-zinc-700 ml-1">
               Password
@@ -214,6 +279,7 @@ export default function SignUp() {
             )}
           </div>
 
+          {/* Terms Checkbox */}
           <div className="flex items-start gap-3 mt-2">
             <input
               type="checkbox"
@@ -246,14 +312,14 @@ export default function SignUp() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transform hover:-translate-y-0.5 transition-all duration-200"
           >
-            {isSubmitting ? "Creating Account..." : "Get Started"}
-            {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+            Create acc
           </button>
         </form>
 
+
+        
         <div className="mt-8 text-center border-t border-zinc-100 pt-6">
           <p className="text-zinc-500 text-sm">
             Already have an account?{" "}

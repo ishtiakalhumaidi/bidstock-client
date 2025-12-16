@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router";
-import { Menu, X, Bell, Search } from "lucide-react";
+import { Menu, X, Bell, Search, User } from "lucide-react";
 import AdminSidebar from "../components/sidebar/AdminSidebar";
+import { useAuth } from "../hooks/useAuth";
 
 export default function DashboardLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-zinc-50 flex">
@@ -61,8 +63,16 @@ export default function DashboardLayout() {
               <Bell size={20} />
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
             </button>
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 border border-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-600">
-              AD
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 border border-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-600 overflow-hidden">
+              {user?.user_image ? (
+                <img
+                  src={user.user_image}
+                  alt="User avatar"
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                <User className="h-5 w-5 text-zinc-500" />
+              )}
             </div>
           </div>
         </header>

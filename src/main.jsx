@@ -8,7 +8,7 @@ import { Tooltip } from "react-tooltip";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import { router } from "./router/router";
-
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -16,10 +16,12 @@ document.documentElement.setAttribute("data-theme", "light");
 AOS.init();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
 
-      <Tooltip id="my-tooltip" />
-    </QueryClientProvider>
+        <Tooltip id="my-tooltip" />
+      </QueryClientProvider>
+    </AuthProvider>
   </StrictMode>
 );
