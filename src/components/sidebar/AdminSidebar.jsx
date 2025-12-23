@@ -7,36 +7,124 @@ import {
   Warehouse,
   CreditCard,
   Users,
-  Settings,
   LogOut,
+  User,
+  PackagePlus,
+  Wallet,    
+  Key       
 } from "lucide-react";
 import Logo from "../common/Logo";
 import { useAuth } from "../../hooks/useAuth";
 
-const navItems = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Active Auctions", href: "/dashboard/auctions", icon: Gavel },
-  { name: "Inventory", href: "/dashboard/inventory", icon: Package },
-  { name: "My Inventory", href: "/dashboard/my-inventories", icon: Package },
-  { name: "Warehouses", href: "/dashboard/warehouses", icon: Warehouse },
-  { name: "My Warehouses", href: "/dashboard/my-warehouses", icon: Warehouse },
-  { name: "My Rents", href: "/dashboard/my-rents", icon: Warehouse },
-  { name: "Add Warehouses", href: "/dashboard/add-warehouse", icon: Warehouse },
-  { name: "Transactions History", href: "/dashboard/my-transactions", icon: CreditCard },
-  { name: "User Management", href: "/dashboard/users", icon: Users },
-  { name: "Add Product", href: "/dashboard/add-product", icon: Users },
-  { name: "My Products", href: "/dashboard/my-product", icon: Package },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
-];
-
 export default function AdminSidebar({ className }) {
-  const { logout } = useAuth();
-  const navigate = useNavigate(); 
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();         
-    navigate("/");    
+    logout();
+    navigate("/");
   };
+
+  
+  const navItems = [
+    { 
+      name: "Overview", 
+      href: "/dashboard", 
+      icon: LayoutDashboard, 
+      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
+    },
+    { 
+      name: "User Management", 
+      href: "/dashboard/users", 
+      icon: Users, 
+      roles: ['admin'] 
+    },
+    { 
+      name: "Global Inventory", 
+      href: "/dashboard/inventory", 
+      icon: Package, 
+      roles: ['admin'] 
+    },
+    
+    
+    { 
+      name: "Add Product", 
+      href: "/dashboard/add-product", 
+      icon: PackagePlus, // Corrected from Users
+      roles: ['seller'] 
+    },
+    { 
+      name: "My Products", 
+      href: "/dashboard/my-product", 
+      icon: Package, 
+      roles: ['seller'] 
+    },
+    { 
+      name: "My Inventory", 
+      href: "/dashboard/my-inventories", 
+      icon: Package, 
+      roles: ['seller'] 
+    },
+    { 
+      name: "My Auctions", 
+      href: "/dashboard/my-auctions", 
+      icon: Gavel, 
+      roles: ['seller'] 
+    },
+    { 
+      name: "Rent Warehouse", 
+      href: "/warehouses", 
+      icon: Warehouse, 
+      roles: ['seller'] 
+    },
+    { 
+      name: "My Rents", 
+      href: "/dashboard/my-rents", 
+      icon: Key, 
+      roles: ['seller'] 
+    },
+
+    
+    { 
+      name: "My Warehouses", 
+      href: "/dashboard/my-warehouses", 
+      icon: Warehouse, 
+      roles: ['warehouse_owner'] 
+    },
+    { 
+      name: "Add Warehouse", 
+      href: "/dashboard/add-warehouse", 
+      icon: Warehouse, 
+      roles: ['warehouse_owner'] 
+    },
+
+    
+    { 
+      name: "Payment Requests", 
+      href: "/dashboard/transactions-requests", 
+      icon: Wallet, 
+      roles: ['buyer', 'seller'] 
+    },
+    { 
+      name: "Transaction History", 
+      href: "/dashboard/my-transactions", 
+      icon: CreditCard, 
+      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
+    },
+
+   
+    { 
+      name: "My Profile", 
+      href: "/dashboard/my-profile", 
+      icon: User, 
+      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
+    },
+  ];
+
+  
+  const filteredNavItems = navItems.filter((item) => 
+    item.roles.includes(user?.role)
+  );
 
   return (
     <aside
@@ -52,11 +140,11 @@ export default function AdminSidebar({ className }) {
 
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-        {navItems.map((item) => (
+        {filteredNavItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}
-            end={item.href === "/dashboard"} // Only exact match for root
+            end={item.href === "/dashboard"}
             className={({ isActive }) => `
               flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
               ${isActive
@@ -81,8 +169,16 @@ export default function AdminSidebar({ className }) {
 
       {/* Footer / Logout */}
       <div className="p-4 border-t border-zinc-100">
+        <div className="mb-4 px-3">
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                Logged in as
+            </p>
+            <p className="text-sm font-bold text-zinc-900 capitalize">
+                {user?.role?.replace('_', ' ')}
+            </p>
+        </div>
         <button
-          onClick={handleLogout} // 
+          onClick={handleLogout}
           className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-600 hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <LogOut size={18} />

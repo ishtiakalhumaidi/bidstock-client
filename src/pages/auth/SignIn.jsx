@@ -1,34 +1,53 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link } from "react-router"; // or "react-router-dom" depending on your version
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, User, Store, Warehouse } from "lucide-react";
 import Logo from "../../components/common/Logo";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router"; // or "react-router-dom"
 import { useAuth } from "../../hooks/useAuth";
 import api from "../../api/auth.api";
 
 export default function SignIn() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  
   const mutation = useMutation({
     mutationFn: (data) => api.post("/auth/signin", data),
     onSuccess: (res) => {
-      // console.log(res.data.token)
       login(res.data.data.user, res.data.data.token);
       navigate("/dashboard");
     },
+    onError: (err) => {
+        // Optional: Handle error specifically if needed
+        console.error("Login failed", err);
+    }
   });
+
   const [showPassword, setShowPassword] = useState(false);
+  
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm();
 
-  const onSubmit = async (data) => {
+  const onSubmit = (data) => {
     mutation.mutate(data);
+  };
+
+  // --- Helper for Demo Login ---
+  const handleDemoLogin = (role) => {
+    const credentials = {
+        seller: { email: "seller@bidstock.com", password: "12345678" },
+        buyer: { email: "buyer@bidstock.com", password: "12345678" },
+        warehouse_owner: { email: "w.owner@bidstock.com", password: "12345678" },
+    };
+
+    if (credentials[role]) {
+        mutation.mutate(credentials[role]);
+    }
   };
 
   return (
@@ -43,7 +62,6 @@ export default function SignIn() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        // CHANGED: max-w-md -> max-w-xl to match SignUp
         className="relative z-10 w-full max-w-xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-2xl rounded-3xl p-8 sm:p-10"
       >
         {/* Header */}
@@ -51,7 +69,6 @@ export default function SignIn() {
           <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
             <Logo />
           </Link>
-          {/* CHANGED: text-2xl -> text-3xl to match SignUp */}
           <h2 className="text-3xl font-bold text-zinc-900">Welcome back</h2>
           <p className="text-zinc-500 mt-2 text-sm">
             Enter your details to access your dashboard
@@ -150,6 +167,56 @@ export default function SignIn() {
             {!mutation.isPending && <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
+
+        {/* --- DEMO LOGIN SECTION --- */}
+        <div className="mt-8">
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-zinc-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white/50 px-2 text-zinc-500 backdrop-blur-sm rounded-lg">Or Demo Login</span>
+                </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+                <button
+                    type="button"
+                    onClick={() => handleDemoLogin('seller')}
+                    disabled={mutation.isPending}
+                    className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 transition-all group"
+                >
+                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                        <Store className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-600">Seller</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => handleDemoLogin('buyer')}
+                    disabled={mutation.isPending}
+                    className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 transition-all group"
+                >
+                    <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                        <User className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-600">Buyer</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => handleDemoLogin('warehouse_owner')}
+                    disabled={mutation.isPending}
+                    className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 transition-all group"
+                >
+                    <div className="p-2 rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-100 transition-colors">
+                        <Warehouse className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-600 text-center">Warehouse</span>
+                </button>
+            </div>
+        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center">

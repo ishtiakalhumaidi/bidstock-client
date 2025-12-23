@@ -15,6 +15,12 @@ import AllWarehouses from "../pages/dashboard/common/AllWarehouses";
 import MyRents from "../pages/dashboard/seller/MyRents";
 import MyInventory from "../pages/dashboard/inventory/MyInventory";
 import MyTransactions from "../pages/dashboard/transactions/MyTransactions";
+import Profile from "../pages/dashboard/profile/Profile";
+import ActiveAuctions from "../pages/auctions/ActiveAuctions";
+import MyAuctions from "../pages/dashboard/auctions/MyAuctions";
+import TransactionRequests from "../pages/dashboard/transactions/TransactionRequests";
+import About from "../components/About";
+import Overview from "../pages/dashboard/Overview";
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +35,18 @@ export const router = createBrowserRouter([
       {
         path: "pricing",
         element: <Pricing />,
+      },
+      {
+        path: "auctions",
+        element: <ActiveAuctions />,
+      },
+      {
+        path: "warehouses",
+        element: <AllWarehouses />,
+      },
+      {
+        path: "about",
+        element: <About />,
       },
     ],
   },
@@ -53,7 +71,10 @@ export const router = createBrowserRouter([
     element: <DashboardLayout />,
 
     errorElement: <NotFound />,
-    children: [
+    children: [{
+        index: true,
+        element: <Overview />,
+      },
       {
         path: "add-product",
         element: <AddProduct />,
@@ -62,10 +83,7 @@ export const router = createBrowserRouter([
         path: "my-product",
         element: <MyProducts />,
       },
-      {
-        path: "warehouses",
-        element: <AllWarehouses />,
-      },
+      
       {
         path: "add-warehouse",
         element: <AddWarehouse />,
@@ -85,6 +103,18 @@ export const router = createBrowserRouter([
       {
         path: "my-transactions",
         element: <MyTransactions />,
+      },
+      {
+        path: "my-profile",
+        element: <Profile />,
+      },
+      {
+        path: "my-auctions",
+        element: <MyAuctions />,
+      },
+      {
+        path: "transactions-requests",
+        element: <TransactionRequests />,
       },
     ],
   },

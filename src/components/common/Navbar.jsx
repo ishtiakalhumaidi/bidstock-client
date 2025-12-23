@@ -10,7 +10,7 @@ const navItems = [
   { name: "Home", href: "/" },
   {
     name: "Marketplace",
-    href: "/marketplace",
+    href: "/auctions",
     hasDropdown: true,
     dropdownItems: [
       {
@@ -22,11 +22,6 @@ const navItems = [
         name: "Warehouse Storage",
         href: "/warehouses",
         description: "Rent commercial space for your stock",
-      },
-      {
-        name: "Sell Inventory",
-        href: "/suppliers",
-        description: "List your products for bulk auction",
       },
     ],
   },

@@ -11,6 +11,7 @@ import {
   Loader2,
   Filter,
   CreditCard,
+  Lock
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../hooks/useAuth";
@@ -38,6 +39,7 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
     formState: { errors },
     watch,
     reset,
+    trigger // Used to validate step 1 before moving to step 2
   } = useForm();
 
   // Watch dates to calculate price dynamically
@@ -50,11 +52,12 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
   const serviceFee = rentCost * 0.05; // 5% fee
   const totalAmount = rentCost + serviceFee;
 
-  // Transaction Mutation
   const transactionMutation = useMutation({
-    mutationFn: (rentData) => {
+    mutationFn: (data) => {
+      // Note: In a real app, you would tokenize card details here via Stripe/PayPal
+      // before sending to your backend. We simulate this by sending just the metadata.
       return api.post("/transactions", {
-        bid_id:null,
+        bid_id: null,
         from_role: "seller",
         from_id: user.user_id,
         to_role: "warehouse_owner",
@@ -63,19 +66,19 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
         amount: totalAmount.toFixed(2),
         status: "completed",
         payment_method: "credit_card",
+        // Using a mock reference ID for the transaction
         reference_id: `RENT-${warehouse.warehouse_id}-${Date.now()}`,
       });
     },
   });
 
-  // Rent Mutation
   const rentMutation = useMutation({
     mutationFn: (data) => {
       return api.post("/rents", {
         seller_id: user.user_id,
         warehouse_id: warehouse.warehouse_id,
         start_date: data.start_date,
-        end_date: data.end_date, // Must exist for calculation
+        end_date: data.end_date,
       });
     },
     onSuccess: () => {
@@ -102,11 +105,16 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
     }
   };
 
+  const handleNextStep = async () => {
+    const isValid = await trigger(["start_date", "end_date"]);
+    if (isValid) setStep("payment");
+  };
+
   if (!isOpen) return null;
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className=" fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -115,15 +123,16 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
       >
         <div className="p-6 border-b border-zinc-100 flex justify-between items-center">
           <h3 className="text-xl font-bold text-zinc-900">
-            {step === "details" ? "Rental Details" : "Payment"}
+            {step === "details" ? "Rental Details" : "Secure Payment"}
           </h3>
           <button onClick={onClose}>
-            <X size={20} className="text-zinc-500" />
+            <X size={20} className="text-zinc-500 hover:text-zinc-800" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           {step === "details" ? (
+            /* --- STEP 1: DATES --- */
             <>
               {/* Warehouse Info */}
               <div className="flex items-center gap-2 text-sm text-zinc-500 mb-2">
@@ -139,9 +148,10 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
                   <input
                     type="date"
                     min={today}
-                    {...register("start_date", { required: true })}
+                    {...register("start_date", { required: "Start date is required" })}
                     className="w-full border border-zinc-200 rounded-lg p-2.5 focus:ring-2 focus:ring-rose-500 outline-none"
                   />
+                  {errors.start_date && <p className="text-xs text-red-500">{errors.start_date.message}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-zinc-700">
@@ -150,13 +160,14 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
                   <input
                     type="date"
                     min={startDate || today}
-                    {...register("end_date", { required: true })}
+                    {...register("end_date", { required: "End date is required" })}
                     className="w-full border border-zinc-200 rounded-lg p-2.5 focus:ring-2 focus:ring-rose-500 outline-none"
                   />
+                  {errors.end_date && <p className="text-xs text-red-500">{errors.end_date.message}</p>}
                 </div>
               </div>
 
-              {/* Dynamic Financial Summary */}
+              {/* Financial Summary */}
               {startDate && endDate && (
                 <div className="bg-zinc-50 p-4 rounded-xl space-y-2 mt-4 animate-in fade-in slide-in-from-top-2">
                   <div className="flex justify-between text-sm">
@@ -169,15 +180,11 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Subtotal Rent</span>
-                    <span className="font-semibold">
-                      ${rentCost.toFixed(2)}
-                    </span>
+                    <span className="font-semibold">${rentCost.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Service Fee (5%)</span>
-                    <span className="font-semibold">
-                      ${serviceFee.toFixed(2)}
-                    </span>
+                    <span className="font-semibold">${serviceFee.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-zinc-200 pt-2 flex justify-between font-bold text-zinc-900 text-lg">
                     <span>Total</span>
@@ -188,7 +195,7 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
 
               <button
                 type="button"
-                onClick={() => setStep("payment")}
+                onClick={handleNextStep}
                 disabled={!startDate || !endDate}
                 className="w-full py-3 bg-zinc-900 text-white font-bold rounded-xl mt-2 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
               >
@@ -196,30 +203,89 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
               </button>
             </>
           ) : (
+            /* --- STEP 2: PAYMENT --- */
             <>
-              {/* Payment UI */}
-              <div className="space-y-3">
-                <div className="p-3 border rounded-xl flex items-center gap-3 bg-blue-50 border-blue-200">
-                  <CreditCard className="text-blue-600" />
-                  <div>
-                    <p className="text-sm font-bold text-blue-900">
-                      Credit Card ending in 4242
-                    </p>
-                    <p className="text-xs text-blue-600">Expires 12/25</p>
+              <div className="space-y-4">
+                {/* Amount Header */}
+                <div className="text-center pb-2 border-b border-zinc-100">
+                   <p className="text-sm text-zinc-500">Total Amount to Pay</p>
+                   <h2 className="text-3xl font-bold text-zinc-900">${totalAmount.toFixed(2)}</h2>
+                </div>
+
+                {/* Card Number */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+                    Card Number
+                    <div className="flex gap-1">
+                       <CreditCard size={14} className="text-zinc-400"/>
+                    </div>
+                  </label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-3 h-5 w-5 text-zinc-400" />
+                    <input 
+                      type="text" 
+                      placeholder="0000 0000 0000 0000"
+                      maxLength={19}
+                      {...register("card_number", { 
+                        required: "Card number is required",
+                        minLength: { value: 16, message: "Invalid card number" }
+                      })}
+                      className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                    />
+                  </div>
+                  {errors.card_number && <p className="text-xs text-red-500">{errors.card_number.message}</p>}
+                </div>
+
+                {/* Expiry & CVV */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-zinc-700">Expiry Date</label>
+                    <input 
+                      type="text" 
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      {...register("card_expiry", { 
+                        required: "Expiry is required",
+                        pattern: { value: /^(0[1-9]|1[0-2])\/?([0-9]{2})$/, message: "Invalid format (MM/YY)" }
+                      })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                    />
+                    {errors.card_expiry && <p className="text-xs text-red-500">{errors.card_expiry.message}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-zinc-700">CVV / CVC</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                      <input 
+                        type="password" 
+                        placeholder="123"
+                        maxLength={4}
+                        {...register("card_cvv", { 
+                          required: "CVV is required",
+                          minLength: { value: 3, message: "Invalid CVV" }
+                        })}
+                        className="w-full pl-9 pr-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none"
+                      />
+                    </div>
+                    {errors.card_cvv && <p className="text-xs text-red-500">{errors.card_cvv.message}</p>}
                   </div>
                 </div>
-                <div className="text-center py-2">
-                  <span className="text-zinc-500 text-sm">Amount to Pay:</span>
-                  <div className="text-2xl font-bold text-zinc-900">
-                    ${totalAmount.toFixed(2)}
-                  </div>
+
+                {/* Cardholder Name */}
+                <div className="space-y-1.5">
+                   <label className="text-sm font-semibold text-zinc-700">Cardholder Name</label>
+                   <input 
+                      type="text"
+                      placeholder="JOHN DOE"
+                      {...register("card_name", { required: "Name is required" })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none uppercase"
+                   />
+                   {errors.card_name && <p className="text-xs text-red-500">{errors.card_name.message}</p>}
                 </div>
-                <p className="text-xs text-zinc-500 text-center">
-                  Payment will be processed securely via Stripe (Mock).
-                </p>
               </div>
 
-              <div className="flex gap-3 mt-4">
+              {/* Actions */}
+              <div className="flex gap-3 mt-4 pt-2">
                 <button
                   type="button"
                   onClick={() => setStep("details")}
@@ -229,18 +295,15 @@ const RentModal = ({ warehouse, isOpen, onClose }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={
-                    transactionMutation.isPending || rentMutation.isPending
-                  }
+                  disabled={transactionMutation.isPending || rentMutation.isPending}
                   className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-500/20 disabled:opacity-70 flex items-center justify-center gap-2"
                 >
                   {transactionMutation.isPending || rentMutation.isPending ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} />{" "}
-                      Processing...
+                      <Loader2 className="animate-spin" size={18} /> Processing...
                     </>
                   ) : (
-                    `Confirm Pay`
+                    `Pay $${totalAmount.toFixed(2)}`
                   )}
                 </button>
               </div>
@@ -295,7 +358,7 @@ const WarehouseCard = ({ warehouse, onRent }) => {
           </h3>
           <div className="flex items-center gap-2 text-sm text-zinc-500 mt-2">
             <Maximize size={16} className="text-zinc-400" />
-            <span>{warehouse.capacity.toLocaleString()} sq ft</span>
+            <span>{warehouse.capacity.toLocaleString()} items capacity</span>
           </div>
           <div className="mt-2">
             <span
@@ -321,7 +384,6 @@ const WarehouseCard = ({ warehouse, onRent }) => {
   );
 };
 
-// --- 3. Main Page Component (Default Export) ---
 export default function AllWarehouses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
@@ -356,7 +418,7 @@ export default function AllWarehouses() {
     );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 my-12 max-w-[1180px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">
