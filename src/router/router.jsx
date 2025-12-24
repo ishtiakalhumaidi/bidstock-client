@@ -21,6 +21,7 @@ import MyAuctions from "../pages/dashboard/auctions/MyAuctions";
 import TransactionRequests from "../pages/dashboard/transactions/TransactionRequests";
 import About from "../components/About";
 import Overview from "../pages/dashboard/Overview";
+import BidDetails from "../pages/auctions/BidDetails";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
       {
         path: "auctions",
         element: <ActiveAuctions />,
+      },
+      {
+        path: "auctions/:id",
+        element: <BidDetails />,
       },
       {
         path: "warehouses",

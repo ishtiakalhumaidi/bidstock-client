@@ -2,89 +2,16 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
-  Gavel, Clock, Calendar, Search, X, Loader2, Tag, AlertCircle 
+  Gavel, Clock, Calendar, X, Loader2, Tag, AlertCircle 
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/auth.api';
 import { useAuth } from '../../hooks/useAuth';
-
-
-const PlaceOfferModal = ({ bid, isOpen, onClose }) => {
-  const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
-
-  const mutation = useMutation({
-    mutationFn: (data) => api.post('/offers', {
-      bid_id: bid.bid_id,
-      offered_price: parseFloat(data.amount)
-    }),
-    onSuccess: () => {
-      alert("Offer placed successfully!");
-      queryClient.invalidateQueries(['active-bids']);
-      reset();
-      onClose();
-    },
-    onError: (err) => {
-      alert(err.response?.data?.message || "Failed to place offer");
-    }
-  });
-
-  if (!isOpen) return null;
-
-  const currentPrice = bid.highest_bid ? parseFloat(bid.highest_bid) : parseFloat(bid.base_price);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-          <div>
-            <h3 className="text-lg font-bold text-zinc-900">Place Your Bid</h3>
-            <p className="text-sm text-zinc-500">{bid.product_name}</p>
-          </div>
-          <button onClick={onClose}><X size={20} className="text-zinc-400 hover:text-zinc-600" /></button>
-        </div>
-        <form onSubmit={handleSubmit(mutation.mutate)} className="p-6 space-y-4">
-          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex justify-between items-center">
-             <span className="text-sm text-blue-700 font-medium">Current Price</span>
-             <span className="text-2xl font-bold text-blue-900">${currentPrice}</span>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-zinc-700">Your Offer ($)</label>
-            <input 
-              type="number" 
-              step="0.01"
-              {...register("amount", { 
-                required: "Amount is required",
-                validate: value => parseFloat(value) > currentPrice || "Offer must be higher than current price"
-              })}
-              className="w-full p-3 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none font-bold text-lg"
-              placeholder="0.00"
-            />
-            {errors.amount && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={10}/> {errors.amount.message}</p>}
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={mutation.isPending}
-            className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-zinc-200"
-          >
-            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Gavel size={18} />}
-            Confirm Bid
-          </button>
-        </form>
-      </motion.div>
-    </div>
-  );
-};
-
+import { useNavigate } from 'react-router'; // 1. Import useNavigate
 
 export default function ActiveAuctions() {
   const { user } = useAuth();
+  const navigate = useNavigate(); // 2. Initialize hook
   const [filter, setFilter] = useState('active');
   const [selectedBid, setSelectedBid] = useState(null);
   
@@ -95,8 +22,6 @@ export default function ActiveAuctions() {
       return res.data.data;
     }
   });
-
-  console.log(bids);
 
   const now = new Date();
   const filteredBids = bids?.filter(bid => {
@@ -167,7 +92,9 @@ export default function ActiveAuctions() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="group bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                // 3. Add Navigation Handler
+                onClick={() => navigate(`/auctions/${bid.bid_id}`)}
+                className="group bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full cursor-pointer"
               >
                 {/* Product Image */}
                 <div className="h-56 bg-zinc-100 relative overflow-hidden">
@@ -219,12 +146,16 @@ export default function ActiveAuctions() {
                   <div className="mt-auto">
                     {filter === 'active' ? (
                       <button 
-                        onClick={() => setSelectedBid(bid)}
+                        onClick={(e) => {
+                          // 4. Stop Propagation so card click doesn't fire
+                          e.stopPropagation();
+                          setSelectedBid(bid);
+                        }}
                         disabled={user?.role !== 'buyer'}
                         className="w-full py-3.5 bg-zinc-900 hover:bg-rose-600 hover:shadow-lg hover:shadow-rose-500/20 disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed disabled:shadow-none text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 group-hover:-translate-y-1"
                       >
                         <Gavel size={18} /> 
-                        {user?.role === 'buyer' ? 'Place Bid' : 'Login as Buyer'}
+                        {user?.role === 'buyer' ? 'Quick Bid' : 'Buyer Only'}
                       </button>
                     ) : (
                       <button disabled className="w-full py-3.5 bg-zinc-50 text-zinc-400 font-bold rounded-xl cursor-not-allowed border border-zinc-200 flex items-center justify-center gap-2">
@@ -250,3 +181,80 @@ export default function ActiveAuctions() {
     </div>
   );
 }
+
+// --- SUB-COMPONENT: Place Offer Modal ---
+// Moved outside main component to avoid re-creation on render (best practice), 
+// but passed props correctly.
+const PlaceOfferModal = ({ bid, isOpen, onClose }) => {
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+
+  const mutation = useMutation({
+    mutationFn: (data) => api.post('/offers', {
+      bid_id: bid.bid_id,
+      offered_price: parseFloat(data.amount)
+    }),
+    onSuccess: () => {
+      alert("Offer placed successfully!");
+      queryClient.invalidateQueries(['active-bids']);
+      reset();
+      onClose();
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || "Failed to place offer");
+    }
+  });
+
+  if (!isOpen) return null;
+
+  const currentPrice = bid.highest_bid ? parseFloat(bid.highest_bid) : parseFloat(bid.base_price);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking content
+      >
+        <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900">Place Your Bid</h3>
+            <p className="text-sm text-zinc-500">{bid.product_name}</p>
+          </div>
+          <button onClick={onClose}><X size={20} className="text-zinc-400 hover:text-zinc-600" /></button>
+        </div>
+        <form onSubmit={handleSubmit(mutation.mutate)} className="p-6 space-y-4">
+          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex justify-between items-center">
+             <span className="text-sm text-blue-700 font-medium">Current Price</span>
+             <span className="text-2xl font-bold text-blue-900">${currentPrice}</span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-zinc-700">Your Offer ($)</label>
+            <input 
+              type="number" 
+              step="0.01"
+              {...register("amount", { 
+                required: "Amount is required",
+                validate: value => parseFloat(value) > currentPrice || "Offer must be higher than current price"
+              })}
+              className="w-full p-3 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none font-bold text-lg"
+              placeholder="0.00"
+            />
+            {errors.amount && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={10}/> {errors.amount.message}</p>}
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={mutation.isPending}
+            className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-zinc-200"
+          >
+            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Gavel size={18} />}
+            Confirm Bid
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
