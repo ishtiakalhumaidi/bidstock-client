@@ -32,7 +32,7 @@ export default function AddWarehouse() {
       return api.post("/warehouses", payload);
     },
     onSuccess: () => {
-      navigate("/dashboard/warehouses");
+      navigate("/dashboard/my-warehouses");
     },
   });
 

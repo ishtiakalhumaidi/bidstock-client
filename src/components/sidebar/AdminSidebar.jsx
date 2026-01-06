@@ -10,8 +10,9 @@ import {
   LogOut,
   User,
   PackagePlus,
-  Wallet,    
-  Key       
+  Wallet,
+  Key,
+  ShoppingBag // Added icon
 } from "lucide-react";
 import Logo from "../common/Logo";
 import { useAuth } from "../../hooks/useAuth";
@@ -25,7 +26,6 @@ export default function AdminSidebar({ className }) {
     navigate("/");
   };
 
-  
   const navItems = [
     { 
       name: "Overview", 
@@ -46,11 +46,11 @@ export default function AdminSidebar({ className }) {
       roles: ['admin'] 
     },
     
-    
+    // --- Seller Specific ---
     { 
       name: "Add Product", 
       href: "/dashboard/add-product", 
-      icon: PackagePlus, // Corrected from Users
+      icon: PackagePlus,
       roles: ['seller'] 
     },
     { 
@@ -84,7 +84,7 @@ export default function AdminSidebar({ className }) {
       roles: ['seller'] 
     },
 
-    
+    // --- Warehouse Owner Specific ---
     { 
       name: "My Warehouses", 
       href: "/dashboard/my-warehouses", 
@@ -98,7 +98,15 @@ export default function AdminSidebar({ className }) {
       roles: ['warehouse_owner'] 
     },
 
-    
+    // --- Buyer Specific ---
+    { 
+      name: "My Offers", 
+      href: "/dashboard/my-offers", 
+      icon: ShoppingBag, 
+      roles: ['buyer'] 
+    },
+
+    // --- Financials & Common ---
     { 
       name: "Payment Requests", 
       href: "/dashboard/transactions-requests", 
@@ -111,8 +119,6 @@ export default function AdminSidebar({ className }) {
       icon: CreditCard, 
       roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
     },
-
-   
     { 
       name: "My Profile", 
       href: "/dashboard/my-profile", 
@@ -121,7 +127,6 @@ export default function AdminSidebar({ className }) {
     },
   ];
 
-  
   const filteredNavItems = navItems.filter((item) => 
     item.roles.includes(user?.role)
   );

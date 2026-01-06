@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Briefcase,
   Layers,
+  Maximize // Added icon for Size
 } from "lucide-react";
 
 import { useMutation } from "@tanstack/react-query";
@@ -46,13 +47,13 @@ export default function AddProduct() {
       ...data,
       price: parseFloat(data.price),
       weight: parseFloat(data.weight),
+      size: parseFloat(data.size), // Parse size as float
     };
     mutation.mutate(formattedData);
   };
 
   return (
     <div className="relative w-full h-full min-h-[80vh] overflow-hidden rounded-3xl bg-zinc-50 border border-zinc-200">
-      {/* Background Decor (Stretched to cover full dashboard area) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-rose-100/40 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3"></div>
         <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3"></div>
@@ -90,7 +91,6 @@ export default function AddProduct() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex-1 flex flex-col gap-6"
         >
-          {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Column 1: Basic Info */}
             <div className="lg:col-span-2 space-y-6">
@@ -145,8 +145,9 @@ export default function AddProduct() {
 
             {/* Column 2: Details & Status */}
             <div className="space-y-6">
-              {/* Price & Weight Group */}
+              {/* Price, Weight & Size Group */}
               <div className="bg-white/50 p-6 rounded-2xl border border-zinc-100 space-y-5">
+                
                 {/* Price */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-zinc-700 ml-1">
@@ -180,10 +181,29 @@ export default function AddProduct() {
                     />
                   </div>
                 </div>
+
+                {/* --- NEW SIZE FIELD --- */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-zinc-700 ml-1">
+                    Size / Area (sq ft)
+                  </label>
+                  <div className="relative">
+                    <Maximize className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
+                    <input
+                      {...register("size", { required: true, min: 0 })}
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
               </div>
 
               {/* Category Group */}
               <div className="bg-white/50 p-6 rounded-2xl border border-zinc-100 space-y-5">
+                
                 {/* Category */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold text-zinc-700 ml-1">
@@ -252,7 +272,6 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Footer Actions */}
           <div className="mt-auto pt-6 border-t border-zinc-200/50 flex justify-end">
             <button
               type="submit"

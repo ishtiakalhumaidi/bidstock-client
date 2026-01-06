@@ -22,6 +22,7 @@ import TransactionRequests from "../pages/dashboard/transactions/TransactionRequ
 import About from "../components/About";
 import Overview from "../pages/dashboard/Overview";
 import BidDetails from "../pages/auctions/BidDetails";
+import BuyerOffers from "../pages/dashboard/buyer/BuyerOffers";
 
 export const router = createBrowserRouter([
   {
@@ -76,7 +77,8 @@ export const router = createBrowserRouter([
     element: <DashboardLayout />,
 
     errorElement: <NotFound />,
-    children: [{
+    children: [
+      {
         index: true,
         element: <Overview />,
       },
@@ -88,7 +90,7 @@ export const router = createBrowserRouter([
         path: "my-product",
         element: <MyProducts />,
       },
-      
+
       {
         path: "add-warehouse",
         element: <AddWarehouse />,
@@ -116,6 +118,10 @@ export const router = createBrowserRouter([
       {
         path: "my-auctions",
         element: <MyAuctions />,
+      },
+      {
+        path: "my-offers",
+        element: <BuyerOffers />,
       },
       {
         path: "transactions-requests",
