@@ -76,7 +76,7 @@ export default function AddWarehouse() {
           </div>
 
           <Link
-            to="/dashboard/warehouses"
+            to="/dashboard/my-warehouses"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm"
           >
             <ArrowLeft className="h-4 w-4" /> Cancel

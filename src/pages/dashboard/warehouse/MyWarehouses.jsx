@@ -250,7 +250,6 @@ const WarehouseCard = ({ warehouse, onDelete, onEdit, onViewBookings }) => {
   );
 };
 
-// --- MAIN PAGE ---
 export default function MyWarehouses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
@@ -284,7 +283,6 @@ export default function MyWarehouses() {
   };
 
   const handleEdit = (id) => {
-    // Navigate or open edit modal
     console.log("Edit warehouse:", id);
   };
   const warehouseList = Array.isArray(warehouses)
@@ -331,7 +329,7 @@ export default function MyWarehouses() {
           </p>
         </div>
         <Link
-          to="/dashboard/warehouses/add"
+          to="/dashboard/add-warehouse"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition-transform hover:scale-105 hover:bg-rose-700 active:scale-95"
         >
           <Plus size={18} />

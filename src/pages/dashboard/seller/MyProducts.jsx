@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router'; 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Filter, Loader2, Package, Layers } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, Package } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import api from '../../../api/auth.api';
-// Ensure this path matches where you saved the modal from the previous step
 import AddInventoryModal from './AddInventoryModal';
+import EditProductModal from './EditProductModal'; // Import new modal
 import ProductCard from '../../../components/ui/ProductCard'; 
 
 export default function MyProducts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   
-  // State for the "Add Stock" Modal
+  // State for Modals
   const [selectedProductForInventory, setSelectedProductForInventory] = useState(null);
+  const [selectedProductForEdit, setSelectedProductForEdit] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -23,7 +24,6 @@ export default function MyProducts() {
     queryKey: ['my-products'],
     queryFn: async () => {
       const res = await api.get('/products/my-products'); 
-      // Safety check: ensure we always work with an array
       return Array.isArray(res.data.data) ? res.data.data : [];
     },
   });
@@ -42,9 +42,9 @@ export default function MyProducts() {
     }
   };
 
-  const handleEdit = (id) => {
-    // Navigate to edit page logic here (or use a Link in the card)
-    console.log('Edit product:', id);
+  const handleEdit = (product) => {
+    // Set the product to edit state to open the modal
+    setSelectedProductForEdit(product);
   };
 
   // 3. Filtering Logic
@@ -138,7 +138,6 @@ export default function MyProducts() {
                  product={product} 
                  onDelete={handleDelete}
                  onEdit={handleEdit}
-                 // Opens the Modal
                  onAddToInventory={setSelectedProductForInventory} 
               />
             ))}
@@ -146,12 +145,24 @@ export default function MyProducts() {
         </div>
       )}
 
-      {/* Smart Inventory Modal */}
+      {/* --- MODALS --- */}
+
+      {/* Add Stock Modal */}
       <AnimatePresence>
         {selectedProductForInventory && (
           <AddInventoryModal 
             product={selectedProductForInventory}
             onClose={() => setSelectedProductForInventory(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Edit Product Modal */}
+      <AnimatePresence>
+        {selectedProductForEdit && (
+          <EditProductModal 
+            product={selectedProductForEdit}
+            onClose={() => setSelectedProductForEdit(null)}
           />
         )}
       </AnimatePresence>

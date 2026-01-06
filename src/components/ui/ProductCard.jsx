@@ -54,7 +54,8 @@ const ProductCard = ({ product, onDelete, onEdit, onAddToInventory }) => {
             </button>
             <div className="flex gap-1">
                <button 
-                  onClick={() => onEdit(product.product_id)} 
+                  // Pass full product object here
+                  onClick={() => onEdit(product)} 
                   className="p-2 border border-zinc-200 rounded-lg hover:bg-zinc-50 text-zinc-500 hover:text-blue-600 transition-colors"
                   title="Edit Product"
                 >

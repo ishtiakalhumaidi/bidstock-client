@@ -314,7 +314,7 @@ console.log(rest)
             type="submit"
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transform hover:-translate-y-0.5 transition-all duration-200"
           >
-            Create acc
+            Create Account
           </button>
         </form>
 
