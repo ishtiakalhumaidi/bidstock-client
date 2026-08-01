@@ -18,7 +18,9 @@
 
 BidStock is a full-stack **B2B wholesale auction and inventory management platform** that connects manufacturers, distributors, and retailers through a unified marketplace. The frontend is a **React 19 + Vite** SPA built with **Tailwind CSS v4** and **DaisyUI**, featuring a **custom JWT authentication system** with `localStorage` session persistence, **three-layout route architecture** (public, auth, dashboard), a **real-time auction bidding system**, **warehouse management** with rental tracking, and a **transaction pipeline** for offer negotiation between buyers and sellers.
 
+> 🔗 **Live Demo:** [bidstock](https://bidstock.vercel.app)
 > 🔗 **Backend Repo:** [bidstock-server](https://github.com/ishtiakalhumaidi/bidstock-server)
+
 
 ---
 
