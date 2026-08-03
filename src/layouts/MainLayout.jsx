@@ -1,19 +1,17 @@
 import { Outlet } from "react-router";
-import ScrollToTop from "../components/common/ScrollToTop";
 import Navbar from "../components/common/Navbar";
 import Footer from "../components/common/Footer";
+import ScrollToTop from "../components/common/ScrollToTop";
 
-const MainLayout = () => {
+export default function MainLayout() {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col bg-paper">
       <Navbar />
-      <main className="pt-18">
+      <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
       <ScrollToTop />
     </div>
   );
-};
-
-export default MainLayout;
+}

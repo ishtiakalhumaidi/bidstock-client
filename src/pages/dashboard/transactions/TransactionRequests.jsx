@@ -1,234 +1,176 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { 
-  CreditCard, Lock, Loader2, X, AlertCircle, ShoppingBag, ArrowRight 
-} from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../../api/auth.api';
-import { useAuth } from '../../../hooks/useAuth';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Handshake, ChevronDown, ChevronUp, CheckCircle, ShieldAlert } from "lucide-react";
+import toast from "react-hot-toast";
+import { getMyBids } from "../../../api/bids.api";
+import { getBidOffers, acceptOffer } from "../../../api/offers.api";
+import Card from "../../../components/ui/Card";
+import Button from "../../../components/ui/Button";
+import EmptyState from "../../../components/ui/EmptyState";
+import { RowSkeleton } from "../../../components/ui/Skeleton";
+import { confirmAction } from "../../../lib/confirm";
 
-
-// --- PAYMENT MODAL ---
-const PaymentModal = ({ transaction, isOpen, onClose }) => {
-  const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { errors } } = useForm();
-
-  const mutation = useMutation({
-    mutationFn: (data) => {
-      // Confirm the transaction
-      return api.put(`/transactions/${transaction.transaction_id}`, {
-        status: 'completed',
-        payment_method: 'credit_card', 
-        reference_id: `TX-${Date.now()}-PAID` 
-      });
-    },
-    onSuccess: () => {
-      alert("Payment Successful! Item secured.");
-      queryClient.invalidateQueries(['my-transactions']);
-      onClose();
-    },
-    onError: (err) => alert(err.response?.data?.message || "Payment Failed")
-  });
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-          <div className="flex items-center gap-3">
-             <div className="h-10 w-10 bg-white rounded-lg border border-zinc-200 flex items-center justify-center p-1">
-                {transaction.image_url ? (
-                  <img src={transaction.image_url} className="h-full w-full object-cover rounded"/>
-                ) : (
-                  <ShoppingBag size={20} className="text-zinc-400"/>
-                )}
-             </div>
-             <div>
-               <h3 className="font-bold text-zinc-900 line-clamp-1">{transaction.product_name || "Payment Request"}</h3>
-               <p className="text-xs text-zinc-500">Ref: {transaction.reference_id}</p>
-             </div>
-          </div>
-          <button onClick={onClose}><X size={20} className="text-zinc-400" /></button>
-        </div>
-
-        <form onSubmit={handleSubmit(mutation.mutate)} className="p-6 space-y-5">
-          
-          {/* Amount Display */}
-          <div className="text-center py-4 bg-blue-50 rounded-xl border border-blue-100">
-             <p className="text-sm text-blue-600 font-medium mb-1">Total Amount</p>
-             <p className="text-3xl font-bold text-blue-900">${transaction.amount}</p>
-          </div>
-
-          {/* Card Details */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-500 uppercase">Card Number</label>
-              <div className="relative">
-                <CreditCard className="absolute left-3 top-3 h-5 w-5 text-zinc-400" />
-                <input 
-                  type="text" 
-                  placeholder="0000 0000 0000 0000"
-                  maxLength={19}
-                  {...register("card_number", { required: true, minLength: 16 })}
-                  className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
-              </div>
-              {errors.card_number && <p className="text-xs text-red-500">Invalid Card Number</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 uppercase">Expiry</label>
-                <input 
-                  type="text" 
-                  placeholder="MM/YY"
-                  maxLength={5}
-                  {...register("expiry", { required: true })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 uppercase">CVC</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
-                  <input 
-                    type="password" 
-                    placeholder="123"
-                    maxLength={4}
-                    {...register("cvc", { required: true })}
-                    className="w-full pl-9 pr-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-500 uppercase">Cardholder Name</label>
-                <input 
-                  type="text" 
-                  placeholder="JOHN DOE"
-                  {...register("name", { required: true })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none uppercase"
-                />
-            </div>
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={mutation.isPending}
-            className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl shadow-lg shadow-zinc-200 transition-all flex items-center justify-center gap-2"
-          >
-            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Lock size={16} />}
-            Pay Securely
-          </button>
-        </form>
-      </motion.div>
-    </div>
-  );
-};
-
-// --- MAIN PAGE ---
 export default function TransactionRequests() {
-  const { user } = useAuth();
-  const [selectedTx, setSelectedTx] = useState(null);
-
-  const { data: transactions, isLoading, isError } = useQuery({
-    queryKey: ['my-transactions'],
-    queryFn: async () => {
-      const res = await api.get('/transactions/my-transactions');
-      return res.data.data;
-    }
+  const { data: bidsData, isLoading } = useQuery({
+    queryKey: ["bids", "mine", "requests"],
+    // FIX 1: Pass parameters as an object matching your API definition
+    queryFn: () => getMyBids({ page: 1, limit: 50 }),
   });
 
-  // Filter: Show only Pending Payments where I am the Payer (From)
-  const pendingRequests = transactions?.filter(tx => 
-    tx.status === 'pending' && 
-    tx.transaction_type === 'payment' && 
-    tx.from_id === user.user_id && 
-    tx.from_role === user.role
+  // FIX 2: Safely cast offer_count to a Number to prevent strict filtering failures
+  const activeRequests = (bidsData?.data ?? []).filter(
+    (bid) => Number(bid.offer_count || 0) > 0 && bid.status === 'open'
   );
 
-  if (isLoading) return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>;
-  if (isError) return <div className="text-center p-10 text-red-500">Failed to load requests.</div>;
+  return (
+    <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+      <div className="mb-8" data-aos="fade-up">
+        <p className="font-mono text-xs uppercase tracking-widest text-ink-muted mb-2">Liquidation Engine</p>
+        <h1 className="font-display font-semibold text-2xl text-ink">Transaction Requests</h1>
+      </div>
+
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="bg-white border border-line rounded-2xl p-4 divide-y divide-line">
+            <RowSkeleton /><RowSkeleton />
+          </div>
+        ) : activeRequests.length === 0 ? (
+          <EmptyState
+            icon={Handshake}
+            title="No inbound requests"
+            description="There are currently no pending offers requiring your authorization."
+          />
+        ) : (
+          activeRequests.map((bid) => (
+            <BidOfferGroup key={bid.bid_id} bid={bid} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BidOfferGroup({ bid }) {
+  const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: offersData, isLoading } = useQuery({
+    queryKey: ["offers", "bid", bid.bid_id],
+    queryFn: () => getBidOffers(bid.bid_id),
+    enabled: expanded,
+  });
+
+  const offers = offersData?.data ?? [];
+
+  const acceptMutation = useMutation({
+    mutationFn: (offerId) => acceptOffer(offerId),
+    onSuccess: () => {
+      toast.success("Offer accepted. Ledger updated and auction closed.");
+      // Invalidate the specific queries to force a UI refresh
+      queryClient.invalidateQueries({ queryKey: ["bids", "mine", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["offers", "bid", bid.bid_id] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || "Failed to execute acceptance"),
+  });
+
+  const handleAccept = async (offer) => {
+    const ok = await confirmAction({
+      title: "Execute Transaction?",
+      text: `Accepting this offer of $${Number(offer.offered_price).toLocaleString()} will finalize the auction, deduct inventory, and reject all competing offers.`,
+      confirmText: "Authorize",
+    });
+    if (ok) acceptMutation.mutate(offer.offer_id);
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Payment Requests</h1>
-        <p className="text-zinc-500 text-sm">Review and complete your pending purchases.</p>
+    <Card className="overflow-hidden">
+      <div 
+        className="p-5 flex items-center justify-between cursor-pointer hover:bg-paper-dim/40 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex-1 min-w-0 flex items-center gap-4">
+          <div className="h-12 w-12 bg-paper border border-line rounded-lg overflow-hidden shrink-0">
+            {bid.image_url ? (
+              <img src={bid.image_url} className="h-full w-full object-cover" alt={bid.product_name} />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Handshake size={16} className="text-ink-muted" />
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-ink truncate">{bid.product_name}</h3>
+            <p className="text-[11px] font-mono text-ink-soft mt-0.5">
+              BASE: ${Number(bid.base_price || 0).toLocaleString()} · TOP: ${Number(bid.highest_bid || 0).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 shrink-0">
+          <span className="px-2.5 py-1 bg-amber-soft border border-amber/20 text-amber-dark font-medium text-xs rounded">
+            {Number(bid.offer_count)} Offer{Number(bid.offer_count) !== 1 ? 's' : ''}
+          </span>
+          <button className="h-8 w-8 flex items-center justify-center rounded bg-paper-dim text-ink-muted hover:text-ink hover:bg-line transition-colors">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {pendingRequests?.length === 0 ? (
-             <div className="col-span-full py-20 text-center bg-zinc-50 rounded-2xl border-dashed border-2 border-zinc-200">
-                <CreditCard className="mx-auto h-12 w-12 text-zinc-300 mb-2"/>
-                <p className="text-zinc-500 font-medium">No pending payments.</p>
-             </div>
+      {expanded && (
+        <div className="border-t border-line bg-paper-dim/20 p-5">
+          {isLoading ? (
+            <div className="animate-pulse flex gap-4">
+              <div className="h-16 w-full bg-paper-dim border border-line rounded-xl" />
+            </div>
+          ) : offers.length === 0 ? (
+            <p className="text-sm font-mono text-ink-muted text-center py-4">No active offers available for review.</p>
           ) : (
-            pendingRequests.map((tx) => (
-              <motion.div 
-                key={tx.transaction_id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col"
-              >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
-                   <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                     Action Required
-                   </span>
-                   <span className="text-xs text-zinc-400 font-mono">#{tx.transaction_id}</span>
-                </div>
-
-                {/* Product Details */}
-                <div className="flex items-center gap-4 mb-6">
-                   <div className="h-16 w-16 bg-zinc-100 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-zinc-100">
-                      {tx.image_url ? (
-                        <img src={tx.image_url} alt="" className="h-full w-full object-cover"/>
-                      ) : (
-                        <ShoppingBag className="text-zinc-300" />
+            <ul className="space-y-3">
+              {offers.map((offer) => (
+                <li key={offer.offer_id} className="bg-white border border-line rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-amber-soft transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold font-display text-ink">{offer.buyer_name}</p>
+                      {offer.is_suspicious === 1 && (
+                        <span className="flex items-center gap-1 text-[10px] text-red uppercase tracking-wider font-bold bg-red-soft border border-red/20 px-1.5 py-0.5 rounded">
+                          <ShieldAlert size={10} /> Flagged
+                        </span>
                       )}
-                   </div>
-                   <div>
-                      <h3 className="font-bold text-zinc-900 line-clamp-1">{tx.product_name || "Unknown Item"}</h3>
-                      <p className="text-sm text-zinc-500">Seller: {tx.counterparty_name || "Unknown"}</p>
-                   </div>
-                </div>
-
-                {/* Footer / Action */}
-                <div className="mt-auto pt-4 border-t border-zinc-100 flex items-center justify-between">
-                   <div>
-                      <p className="text-xs text-zinc-400 uppercase font-bold">Total</p>
-                      <p className="text-xl font-bold text-zinc-900">${tx.amount}</p>
-                   </div>
-                   <button 
-                     onClick={() => setSelectedTx(tx)}
-                     className="px-5 py-2.5 bg-zinc-900 hover:bg-rose-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 text-sm shadow-lg shadow-zinc-200 hover:shadow-rose-500/20"
-                   >
-                     Pay Now <ArrowRight size={14} />
-                   </button>
-                </div>
-              </motion.div>
-            ))
+                    </div>
+                    <p className="text-[11px] font-mono text-ink-muted">
+                      {new Date(offer.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-line pt-3 md:pt-0">
+                    <div className="text-right">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted mb-0.5">Offered Amount</p>
+                      <p className="font-mono font-tabular font-bold text-lg text-ink">
+                        ${Number(offer.offered_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    
+                    {offer.status === 'pending' ? (
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        icon={CheckCircle}
+                        loading={acceptMutation.isPending}
+                        onClick={() => handleAccept(offer)}
+                      >
+                        Authorize
+                      </Button>
+                    ) : (
+                      <span className="text-xs font-mono text-ink-muted bg-paper-dim px-3 py-1.5 rounded border border-line capitalize">
+                        {offer.status}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </AnimatePresence>
-      </div>
-
-      {selectedTx && (
-        <PaymentModal 
-          transaction={selectedTx} 
-          isOpen={!!selectedTx} 
-          onClose={() => setSelectedTx(null)} 
-        />
+        </div>
       )}
-    </div>
+    </Card>
   );
 }

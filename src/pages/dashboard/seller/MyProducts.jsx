@@ -1,171 +1,175 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router'; 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Filter, Loader2, Package } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-import api from '../../../api/auth.api';
-import AddInventoryModal from './AddInventoryModal';
-import EditProductModal from './EditProductModal'; // Import new modal
-import ProductCard from '../../../components/ui/ProductCard'; 
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router";
+import { Package, Plus, Pencil, Trash2, Gavel, Boxes, ExternalLink } from "lucide-react";
+import toast from "react-hot-toast";
+import { getSellerProducts, deleteProduct } from "../../../api/products.api";
+import Card from "../../../components/ui/Card";
+import Button from "../../../components/ui/Button";
+import StatusPill from "../../../components/ui/StatusPill";
+import EmptyState from "../../../components/ui/EmptyState";
+import { CardSkeleton } from "../../../components/ui/Skeleton";
+import Pagination from "../../../components/ui/Pagination";
+import { confirmAction } from "../../../lib/confirm";
+import EditProductModal from "../../../pages/dashboard/seller/EditProductModal";
+import OpenAuctionModal from "../../../pages/dashboard/seller/OpenAuctionModal";
 
 export default function MyProducts() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  
-  // State for Modals
-  const [selectedProductForInventory, setSelectedProductForInventory] = useState(null);
-  const [selectedProductForEdit, setSelectedProductForEdit] = useState(null);
-
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(null);
+  const [auctioning, setAuctioning] = useState(null);
+  const [page, setPage] = useState(1);
 
-  // 1. Fetch Products
-  const { data: products, isLoading, isError } = useQuery({
-    queryKey: ['my-products'],
-    queryFn: async () => {
-      const res = await api.get('/products/my-products'); 
-      return Array.isArray(res.data.data) ? res.data.data : [];
-    },
+  const { data, isLoading } = useQuery({
+    queryKey: ["products", "mine", page],
+    queryFn: () => getSellerProducts({ page, limit: 12 }),
   });
 
-  // 2. Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id) => api.delete(`/products/${id}`),
+  const products = data?.data ?? [];
+  const pagination = data?.pagination;
+
+  const remove = useMutation({
+    mutationFn: deleteProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['my-products']);
+      toast.success("Asset wiped from ledger.");
+      queryClient.invalidateQueries({ queryKey: ["products", "mine"] });
     },
+    onError: (err) => toast.error(err.response?.data?.message || "Deletion sequence failed."),
   });
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = async (product) => {
+    const ok = await confirmAction({
+      title: "Purge asset record?",
+      text: `Execution will permanently drop "${product.name}" from the database. Linked active logic may fail.`,
+      confirmText: "Execute Purge",
+      danger: true,
+    });
+    if (ok) remove.mutate(product.product_id);
   };
-
-  const handleEdit = (product) => {
-    // Set the product to edit state to open the modal
-    setSelectedProductForEdit(product);
-  };
-
-  // 3. Filtering Logic
-  const filteredProducts = products?.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || product.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex h-96 w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-64 flex-col items-center justify-center text-center">
-        <Package className="h-12 w-12 text-zinc-300 mb-4" />
-        <h3 className="text-lg font-semibold text-zinc-900">Failed to load inventory</h3>
-        <p className="text-zinc-500">Please try refreshing the page.</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
+      
+      {/* Header & Metrics */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">My Inventory</h1>
-          <p className="text-sm text-zinc-500">
-             Manage active listings and stock levels ({products?.length || 0} items)
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted mb-2">
+            Active Dataset: {pagination?.total ?? products.length} Output{(pagination?.total ?? products.length) !== 1 ? "s" : ""}
           </p>
+          <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">Supply Assets</h1>
         </div>
-        <Link
-          to="/dashboard/add-product"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition-transform hover:scale-105 hover:bg-rose-700 active:scale-95"
-        >
-          <Plus size={18} />
-          Add Product
+        <Link to="/dashboard/add-product">
+          <Button variant="primary" icon={Plus} className="w-full sm:w-auto shadow-sm">
+            Inject Asset
+          </Button>
         </Link>
       </div>
 
-      {/* Filters Toolbar */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-2.5 h-5 w-5 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-11 pr-4 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-          />
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-zinc-400" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-10 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 cursor-pointer"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="discontinued">Discontinued</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Product Grid */}
-      {filteredProducts?.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-zinc-200 bg-zinc-50/50">
-           <Package className="h-10 w-10 text-zinc-300 mb-2" />
-           <p className="text-zinc-500 font-medium">No products found.</p>
-           {searchTerm && (
-             <button onClick={() => setSearchTerm('')} className="text-rose-600 text-sm mt-2 hover:underline">
-               Clear filters
-             </button>
-           )}
-        </div>
+      ) : products.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="Empty Dataset"
+          description="Initialize your supply pipeline by registering a product into the system architecture."
+          actionLabel="Register Asset"
+          onAction={() => (window.location.href = "/dashboard/add-product")}
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <AnimatePresence>
-            {filteredProducts.map((product) => (
-              <ProductCard 
-                 key={product.product_id} 
-                 product={product} 
-                 onDelete={handleDelete}
-                 onEdit={handleEdit}
-                 onAddToInventory={setSelectedProductForInventory} 
-              />
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {products.map((product, i) => (
+              <Card 
+                key={product.product_id} 
+                aos="fade-up" 
+                aosDelay={(i % 4) * 50} 
+                className="overflow-hidden flex flex-col group hover:border-ink/20 transition-colors"
+              >
+                {/* Visual Block */}
+                <div className="relative aspect-[4/3] bg-paper-dim flex items-center justify-center overflow-hidden border-b border-line">
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      alt={product.name} 
+                    />
+                  ) : (
+                    <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#14181F 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+                  )}
+                  {!product.image_url && <Package size={32} className="text-ink-muted/50 z-10" />}
+                  
+                  <div className="absolute top-3 right-3 z-20">
+                    <StatusPill status={product.status} />
+                  </div>
+                </div>
+                
+                {/* Data Block */}
+                <div className="p-4 flex flex-col flex-1 bg-white">
+                  <h3 className="font-display font-medium text-ink line-clamp-2 min-w-0 leading-tight mb-3">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-auto flex items-end justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-ink-muted mb-0.5">Base Valuation</span>
+                      <span className="font-mono font-tabular font-semibold text-ink text-lg tracking-tight">
+                        ${Number(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-ink-muted mb-0.5">Inventory</span>
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-ink-soft bg-paper-dim px-2 py-0.5 rounded border border-line">
+                        <Boxes size={12} className="text-ink-muted" /> 
+                        {product.available_quantity ?? 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Execution Block */}
+                <div className="p-3 border-t border-line bg-paper/50 flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="accent" 
+                    icon={Gavel} 
+                    className="flex-1 shadow-sm"
+                    disabled={product.status !== "active" || !product.available_quantity}
+                    onClick={() => setAuctioning(product)}
+                  >
+                    Deploy Auction
+                  </Button>
+                  <button
+                    onClick={() => setEditing(product)}
+                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-line-strong text-ink-soft hover:border-ink hover:text-ink bg-white transition-colors shrink-0 tooltip-trigger"
+                    title="Edit Asset"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(product)}
+                    className="h-8 w-8 flex items-center justify-center rounded-lg border border-line-strong text-ink-soft hover:border-red hover:text-red hover:bg-red-soft bg-white transition-colors shrink-0 tooltip-trigger"
+                    title="Purge Asset"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </Card>
             ))}
-          </AnimatePresence>
-        </div>
+          </div>
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="mt-8 border-t border-line pt-6">
+              <Pagination page={pagination.page} totalPages={pagination.totalPages} onChange={setPage} />
+            </div>
+          )}
+        </>
       )}
 
-      {/* --- MODALS --- */}
-
-      {/* Add Stock Modal */}
-      <AnimatePresence>
-        {selectedProductForInventory && (
-          <AddInventoryModal 
-            product={selectedProductForInventory}
-            onClose={() => setSelectedProductForInventory(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Edit Product Modal */}
-      <AnimatePresence>
-        {selectedProductForEdit && (
-          <EditProductModal 
-            product={selectedProductForEdit}
-            onClose={() => setSelectedProductForEdit(null)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Embedded Modals */}
+      <EditProductModal product={editing} open={!!editing} onClose={() => setEditing(null)} />
+      <OpenAuctionModal product={auctioning} open={!!auctioning} onClose={() => setAuctioning(null)} />
     </div>
   );
 }

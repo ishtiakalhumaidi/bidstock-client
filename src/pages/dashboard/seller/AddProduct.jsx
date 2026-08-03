@@ -1,296 +1,219 @@
-import React from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
-import { motion } from "framer-motion";
-import {
-  Package,
-  DollarSign,
-  Tag,
-  Scale,
-  Image as ImageIcon,
-  FileText,
-  ArrowRight,
-  ArrowLeft,
-  Briefcase,
-  Layers,
-  Maximize // Added icon for Size
-} from "lucide-react";
-
-import { useMutation } from "@tanstack/react-query";
-import api from "../../../api/auth.api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
+import { PackagePlus, Box, Info } from "lucide-react";
+import toast from "react-hot-toast";
+import { Input, Textarea, Select } from "../../../components/ui/Field";
+import Button from "../../../components/ui/Button";
+import Card, { CardHeader, CardBody } from "../../../components/ui/Card";
+import { addProduct } from "../../../api/products.api";
 
 export default function AddProduct() {
   const navigate = useNavigate();
-
-  const mutation = useMutation({
-    mutationFn: (data) => api.post("/products", data),
-    onSuccess: () => {
-      navigate("/dashboard/my-product");
-    },
-  });
+  const queryClient = useQueryClient();
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      status: "active",
-      rating: 0,
-      total_reviews: 0,
-      total_sales: 0,
+  } = useForm({ defaultValues: { status: "active", stackable: true } });
+
+  const stackable = watch("stackable");
+
+  const mutation = useMutation({
+    mutationFn: addProduct,
+    onSuccess: () => {
+      toast.success("Product successfully registered in the system.");
+      queryClient.invalidateQueries({ queryKey: ["products", "mine"] });
+      navigate("/dashboard/my-products");
     },
+    onError: (err) => toast.error(err.response?.data?.message || "Registration failed. Check system logs."),
   });
 
-  const onSubmit = (data) => {
-    const formattedData = {
+  const onSubmit = (data) =>
+    mutation.mutate({
       ...data,
-      price: parseFloat(data.price),
-      weight: parseFloat(data.weight),
-      size: parseFloat(data.size), // Parse size as float
-    };
-    mutation.mutate(formattedData);
-  };
+      length_cm: data.length_cm ? Number(data.length_cm) : null,
+      width_cm: data.width_cm ? Number(data.width_cm) : null,
+      height_cm: data.height_cm ? Number(data.height_cm) : null,
+      max_stack_count: data.max_stack_count ? Number(data.max_stack_count) : null,
+      stackable: !!data.stackable,
+    });
 
   return (
-    <div className="relative w-full h-full min-h-[80vh] overflow-hidden rounded-3xl bg-zinc-50 border border-zinc-200">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-rose-100/40 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3"></div>
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3"></div>
+    <div className="max-w-4xl mx-auto animate-in fade-in duration-300 pb-12">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted mb-2">Inventory Pipeline</p>
+          <h1 className="font-display font-semibold text-3xl text-ink tracking-tight">Register Asset</h1>
+        </div>
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate("/dashboard/my-products")}
+          className="hidden sm:flex"
+        >
+          Cancel
+        </Button>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full h-full bg-white/60 backdrop-blur-md p-6 sm:p-10 flex flex-col"
-      >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-zinc-200/60 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-700 shadow-lg shadow-rose-500/20">
-              <Package className="h-6 w-6 text-white" />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Module 1: Market Data */}
+        <Card>
+          <CardHeader 
+            title="Market Parameters" 
+            eyebrow="Module 01" 
+            className="bg-paper-dim/30"
+          />
+          <CardBody className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Input
+                label="Asset Name"
+                required
+                placeholder="e.g., Industrial Shelving Unit — 5 Tier"
+                error={errors.name?.message}
+                className="md:col-span-2"
+                {...register("name", { required: "Asset name is required" })}
+              />
+
+              <Textarea
+                label="Technical Description"
+                placeholder="Define condition, material specifications, and operational constraints."
+                className="md:col-span-2"
+                rows={3}
+                {...register("description")}
+              />
+
+              <Input
+                label="Base Valuation (USD)"
+                required
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+                error={errors.price?.message}
+                {...register("price", {
+                  required: "Valuation is required",
+                  min: { value: 0.01, message: "Valuation must be > 0" },
+                })}
+              />
+              
+              <Select label="System Category" {...register("category")}>
+                <option value="">Assign classification...</option>
+                <option value="electronics">Electronics</option>
+                <option value="furniture">Furniture</option>
+                <option value="apparel">Apparel</option>
+                <option value="industrial">Industrial Equipment</option>
+                <option value="packaged_goods">Packaged Goods</option>
+                <option value="other">Unclassified</option>
+              </Select>
+
+              <Input label="Manufacturer / Brand" placeholder="Optional identifier" {...register("brand")} />
+              <Input label="Packaging Unit" placeholder="e.g., per pallet, crate" {...register("size")} />
+              
+              <Input
+                label="Asset Image URL"
+                type="url"
+                placeholder="https://storage.provider.com/asset.jpg"
+                className="md:col-span-2"
+                {...register("image_url")}
+              />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-zinc-900">
-                List New Product
-              </h2>
-              <p className="text-zinc-500 text-sm">
-                Add inventory to your store
+          </CardBody>
+        </Card>
+
+        {/* Module 2: Spatial & Logistics Data */}
+        <Card>
+          <CardHeader 
+            title="Spatial Logistics" 
+            eyebrow="Module 02" 
+            className="bg-paper-dim/30"
+          />
+          <CardBody>
+            <div className="flex items-start gap-3 p-4 mb-6 rounded-lg bg-amber-soft/50 border border-amber/20 text-sm text-ink-soft">
+              <Info size={16} className="text-amber-dark shrink-0 mt-0.5" />
+              <p>
+                Precise spatial metrics are strictly required to calculate volumetric efficiency when reserving warehouse space. Inaccurate data will result in rejected storage requests.
               </p>
             </div>
-          </div>
 
-          <Link
-            to="/dashboard/inventory"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm"
-          >
-            <ArrowLeft className="h-4 w-4" /> Cancel
-          </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Input
+                label="Weight (kg)"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                {...register("weight")}
+              />
+              <Input
+                label="Length (cm)"
+                type="number"
+                step="0.1"
+                min="0.1"
+                placeholder="0.0"
+                error={errors.length_cm?.message}
+                {...register("length_cm", { min: { value: 0.1, message: "Invalid metric" } })}
+              />
+              <Input
+                label="Width (cm)"
+                type="number"
+                step="0.1"
+                min="0.1"
+                placeholder="0.0"
+                error={errors.width_cm?.message}
+                {...register("width_cm", { min: { value: 0.1, message: "Invalid metric" } })}
+              />
+              <Input
+                label="Height (cm)"
+                type="number"
+                step="0.1"
+                min="0.1"
+                placeholder="0.0"
+                error={errors.height_cm?.message}
+                {...register("height_cm", { min: { value: 0.1, message: "Invalid metric" } })}
+              />
+            </div>
+
+            <div className="border-t border-line pt-5">
+              <label className="flex items-center gap-3 cursor-pointer group w-max">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-line-strong text-ink focus:ring-ink accent-[#14181F]"
+                  {...register("stackable")}
+                />
+                <span className="text-sm font-medium text-ink group-hover:text-amber-dark transition-colors">
+                  Enable vertical stacking limits for this asset
+                </span>
+              </label>
+
+              {stackable && (
+                <div className="mt-4 max-w-sm animate-in slide-in-from-top-2 fade-in duration-200">
+                  <Input
+                    label="Maximum Vertical Multiplier"
+                    type="number"
+                    step="1"
+                    min="1"
+                    placeholder="Auto-calculates if empty"
+                    hint="Define absolute limits for fragile physical assets."
+                    {...register("max_stack_count", { min: { value: 1, message: "Multiplier must be ≥ 1" } })}
+                  />
+                </div>
+              )}
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Execution Node */}
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
+          <Button type="button" variant="ghost" onClick={() => navigate("/dashboard/my-products")} className="sm:hidden">
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" size="lg" icon={PackagePlus} loading={mutation.isPending}>
+            Commit to Database
+          </Button>
         </div>
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex-1 flex flex-col gap-6"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Column 1: Basic Info */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Product Name */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-zinc-700 ml-1">
-                  Product Name
-                </label>
-                <div className="relative">
-                  <Package className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                  <input
-                    {...register("name", { required: "Name is required" })}
-                    type="text"
-                    placeholder="e.g. Sony IMX Sensors (Batch of 500)"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white/80 focus:ring-2 focus:outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-zinc-700 ml-1">
-                  Description
-                </label>
-                <div className="relative h-full">
-                  <FileText className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                  <textarea
-                    {...register("description")}
-                    rows="5"
-                    placeholder="Detailed specifications..."
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white/80 focus:ring-2 focus:outline-none transition-all resize-none"
-                  ></textarea>
-                </div>
-              </div>
-
-              {/* Image URL */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-zinc-700 ml-1">
-                  Image URL
-                </label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                  <input
-                    {...register("image_url")}
-                    type="url"
-                    placeholder="https://example.com/product.jpg"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white/80 focus:ring-2 focus:outline-none transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Column 2: Details & Status */}
-            <div className="space-y-6">
-              {/* Price, Weight & Size Group */}
-              <div className="bg-white/50 p-6 rounded-2xl border border-zinc-100 space-y-5">
-                
-                {/* Price */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Price (USD)
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <input
-                      {...register("price", { required: true, min: 0 })}
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Weight */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Weight (kg)
-                  </label>
-                  <div className="relative">
-                    <Scale className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <input
-                      {...register("weight", { required: true, min: 0 })}
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* --- NEW SIZE FIELD --- */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Size / Area (sq ft)
-                  </label>
-                  <div className="relative">
-                    <Maximize className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <input
-                      {...register("size", { required: true, min: 0 })}
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Category Group */}
-              <div className="bg-white/50 p-6 rounded-2xl border border-zinc-100 space-y-5">
-                
-                {/* Category */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Category
-                  </label>
-                  <div className="relative">
-                    <Layers className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <input
-                      {...register("category", { required: true })}
-                      type="text"
-                      placeholder="Electronics"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Brand */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Brand
-                  </label>
-                  <div className="relative">
-                    <Tag className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <input
-                      {...register("brand", { required: true })}
-                      type="text"
-                      placeholder="Sony"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-zinc-700 ml-1">
-                    Status
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
-                    <select
-                      {...register("status")}
-                      className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-rose-500 bg-white focus:ring-2 focus:outline-none transition-all appearance-none text-zinc-700"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="discontinued">Discontinued</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
-                      <svg
-                        className="w-4 h-4 text-zinc-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 9l-7 7-7-7"
-                        ></path>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-auto pt-6 border-t border-zinc-200/50 flex justify-end">
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto"
-            >
-              {mutation.isPending ? "Saving..." : "Create Product"}
-              {!mutation.isPending && <ArrowRight className="h-5 w-5" />}
-            </button>
-          </div>
-        </form>
-
-        {mutation.isError && (
-          <p className="text-sm text-red-600 text-center mt-4 bg-red-50 py-2 rounded-lg border border-red-100">
-            {mutation.error.response?.data?.message ||
-              "Failed to create product."}
-          </p>
-        )}
-      </motion.div>
+      </form>
     </div>
   );
 }

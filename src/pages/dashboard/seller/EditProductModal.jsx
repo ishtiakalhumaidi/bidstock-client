@@ -1,215 +1,180 @@
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { motion } from 'framer-motion';
-import { X, Save, Package, DollarSign, Scale, Maximize, FileText, Layers, Tag, ImageIcon, Activity } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../../../api/auth.api';
+/* eslint-disable no-unused-vars */
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Package, Save } from "lucide-react";
+import toast from "react-hot-toast";
+import Modal from "../../../components/ui/Modal";
+import { Input, Textarea, Select } from "../../../components/ui/Field";
+import Button from "../../../components/ui/Button";
+import { updateProduct } from "../../../api/products.api";
 
-export default function EditProductModal({ product, onClose }) {
+export default function EditProductModal({ product, open, onClose }) {
   const queryClient = useQueryClient();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
 
-  // Setup form with default values from the selected product
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: {
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      weight: product.weight,
-      size: product.size,
-      category: product.category,
-      brand: product.brand,
-      image_url: product.image_url,
-      status: product.status || 'active'
-    }
-  });
+  // Watch stackable state to toggle the multiplier input dynamically
+  const stackable = watch("stackable");
 
-  // Reset form if product changes
+  // Hydrate all spatial and market parameters when the modal targets an asset
   useEffect(() => {
-    reset({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      weight: product.weight,
-      size: product.size,
-      category: product.category,
-      brand: product.brand,
-      image_url: product.image_url,
-      status: product.status
-    });
+    if (product) {
+      reset({
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        category: product.category,
+        brand: product.brand,
+        image_url: product.image_url,
+        status: product.status,
+        weight: product.weight,
+        length_cm: product.length_cm,
+        width_cm: product.width_cm,
+        height_cm: product.height_cm,
+        stackable: product.stackable,
+        max_stack_count: product.max_stack_count,
+      });
+    }
   }, [product, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data) => api.put(`/products/${product.product_id}`, data),
+    mutationFn: (payload) => updateProduct(product.product_id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries(['my-products']);
+      toast.success("Asset ledger updated successfully.");
+      queryClient.invalidateQueries({ queryKey: ["products", "mine"] });
       onClose();
     },
+    onError: (err) => toast.error(err.response?.data?.message || "Asset update sequence failed."),
   });
 
   const onSubmit = (data) => {
-    // Ensure numbers are sent as numbers
-    const formattedData = {
+    // Coerce numeric spatial values to prevent database schema rejections
+    mutation.mutate({
       ...data,
-      price: parseFloat(data.price),
-      weight: parseFloat(data.weight),
-      size: parseFloat(data.size),
-    };
-    mutation.mutate(formattedData);
+      length_cm: data.length_cm ? Number(data.length_cm) : null,
+      width_cm: data.width_cm ? Number(data.width_cm) : null,
+      height_cm: data.height_cm ? Number(data.height_cm) : null,
+      weight: data.weight ? Number(data.weight) : null,
+      max_stack_count: data.max_stack_count ? Number(data.max_stack_count) : null,
+      stackable: !!data.stackable,
+    });
   };
 
+  if (!product) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+    <Modal open={open} onClose={onClose} title="Modify Asset Ledger" maxWidth="max-w-2xl">
+      
+      {/* Context Anchoring */}
+      <div className="mb-6 p-3 bg-paper-dim border border-line rounded-lg flex items-center gap-3">
+        <div className="h-10 w-10 bg-white border border-line rounded-md flex items-center justify-center shrink-0">
+          <Package size={20} className="text-ink-muted" />
+        </div>
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Target Asset</p>
+          <p className="text-sm font-medium text-ink truncate">{product.name}</p>
+        </div>
+      </div>
+
+      {/* Internal Scrollable Form Area */}
+      <form 
+        id="edit-product-form" 
+        onSubmit={handleSubmit(onSubmit)} 
+        className="space-y-8 max-h-[60vh] overflow-y-auto pr-2 -mr-2"
+        style={{ scrollbarWidth: 'thin' }}
       >
-        {/* Header */}
-        <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-          <div>
-            <h3 className="font-bold text-zinc-900 text-lg flex items-center gap-2">
-              <Edit2Icon className="text-rose-600" size={20} /> Edit Product
-            </h3>
-            <p className="text-sm text-zinc-500">Updating: {product.name}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-200 rounded-full text-zinc-400 hover:text-zinc-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Scrollable Form Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-6">
+        
+        {/* Module 1: Market Data */}
+        <div className="space-y-4">
+          <h4 className="font-mono text-[10px] uppercase tracking-widest text-ink-muted border-b border-line pb-2 mb-4">
+            Market Data
+          </h4>
+          <Input 
+            label="Asset Name" 
+            required 
+            placeholder="Enter asset identifier"
+            {...register("name", { required: "Name is required" })} 
+          />
           
-          {/* Main Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="md:col-span-2 space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Product Name</label>
-                <div className="relative">
-                   <Package className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input 
-                     {...register("name", { required: "Name is required" })}
-                     className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none" 
-                     placeholder="Product Name"
-                   />
-                </div>
-                {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
-             </div>
-
-             <div className="md:col-span-2 space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Description</label>
-                <div className="relative">
-                   <FileText className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <textarea 
-                     {...register("description")}
-                     rows={3}
-                     className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none" 
-                     placeholder="Product Details..."
-                   />
-                </div>
-             </div>
+          <Textarea 
+            label="Technical Description" 
+            placeholder="Update condition or operational constraints..."
+            rows={2}
+            {...register("description")} 
+          />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input 
+              label="Base Valuation ($)" 
+              type="number" 
+              step="0.01" 
+              min="0.01"
+              {...register("price", { min: 0.01 })} 
+            />
+            <Select label="System Status" {...register("status")}>
+              <option value="active">Active (Visible on network)</option>
+              <option value="inactive">Inactive (Hidden)</option>
+            </Select>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Price ($)</label>
-                <div className="relative">
-                   <DollarSign className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input type="number" step="0.01" {...register("price", { required: true })} className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:border-rose-500" />
-                </div>
-             </div>
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Weight (kg)</label>
-                <div className="relative">
-                   <Scale className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input type="number" step="0.01" {...register("weight", { required: true })} className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:border-rose-500" />
-                </div>
-             </div>
-             <div className="space-y-2 col-span-2 md:col-span-1">
-                <label className="text-sm font-semibold text-zinc-700">Size (sq ft)</label>
-                <div className="relative">
-                   <Maximize className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input type="number" step="0.01" {...register("size", { required: true })} className="w-full pl-10 pr-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none focus:border-rose-500" />
-                </div>
-             </div>
-          </div>
-
-          {/* Categorization */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Category</label>
-                <div className="relative">
-                   <Layers className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input {...register("category")} className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-rose-500" />
-                </div>
-             </div>
-             <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Brand</label>
-                <div className="relative">
-                   <Tag className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input {...register("brand")} className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-rose-500" />
-                </div>
-             </div>
-          </div>
-
-          {/* Image & Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Image URL</label>
-                <div className="relative">
-                   <ImageIcon className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <input {...register("image_url")} className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-rose-500" placeholder="https://..." />
-                </div>
-            </div>
-            <div className="space-y-2">
-                <label className="text-sm font-semibold text-zinc-700">Status</label>
-                <div className="relative">
-                   <Activity className="absolute left-3 top-3.5 text-zinc-400 h-5 w-5" />
-                   <select {...register("status")} className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none focus:border-rose-500 appearance-none">
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="discontinued">Discontinued</option>
-                   </select>
-                </div>
-            </div>
-          </div>
-
-        </form>
-
-        {/* Footer Actions */}
-        <div className="p-5 border-t border-zinc-100 bg-zinc-50 flex justify-end gap-3">
-            <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-zinc-300 text-zinc-700 font-medium hover:bg-zinc-100 transition-colors">
-              Cancel
-            </button>
-            <button 
-              onClick={handleSubmit(onSubmit)} 
-              disabled={mutation.isPending}
-              className="px-6 py-2.5 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition-colors shadow-lg shadow-rose-500/20 flex items-center gap-2"
-            >
-              {mutation.isPending ? 'Saving...' : <><Save size={18} /> Save Changes</>}
-            </button>
+          <Input 
+            label="Image URL" 
+            type="url" 
+            placeholder="https://..."
+            {...register("image_url")} 
+          />
         </div>
-      </motion.div>
-    </div>
+
+        {/* Module 2: Spatial Logistics */}
+        <div className="space-y-4 pt-2">
+          <h4 className="font-mono text-[10px] uppercase tracking-widest text-ink-muted border-b border-line pb-2 mb-4">
+            Spatial Logistics
+          </h4>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Input label="Weight (kg)" type="number" step="0.01" {...register("weight")} />
+            <Input label="Length (cm)" type="number" step="0.1" min="0.1" {...register("length_cm")} />
+            <Input label="Width (cm)" type="number" step="0.1" min="0.1" {...register("width_cm")} />
+            <Input label="Height (cm)" type="number" step="0.1" min="0.1" {...register("height_cm")} />
+          </div>
+
+          <div className="border-t border-line-strong pt-4 mt-2">
+            <label className="flex items-center gap-3 cursor-pointer group w-max">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-line-strong text-ink focus:ring-ink accent-[#14181F]"
+                {...register("stackable")}
+              />
+              <span className="text-sm font-medium text-ink group-hover:text-amber-dark transition-colors">
+                Enable vertical stacking limits
+              </span>
+            </label>
+
+            {stackable && (
+              <div className="mt-4 max-w-sm animate-in slide-in-from-top-2 fade-in duration-200">
+                <Input
+                  label="Maximum Vertical Multiplier"
+                  type="number"
+                  step="1"
+                  min="1"
+                  placeholder="Auto-calculates if empty"
+                  {...register("max_stack_count", { min: { value: 1, message: "Multiplier must be ≥ 1" } })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
+      
+      {/* Footer Execution Nodes */}
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6 pt-5 border-t border-line">
+        <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
+          Cancel
+        </Button>
+        <Button type="submit" form="edit-product-form" variant="primary" icon={Save} loading={mutation.isPending} className="w-full sm:w-auto">
+          Commit Changes
+        </Button>
+      </div>
+    </Modal>
   );
 }
-
-// Icon helper
-const Edit2Icon = ({ className, size }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-  </svg>
-);

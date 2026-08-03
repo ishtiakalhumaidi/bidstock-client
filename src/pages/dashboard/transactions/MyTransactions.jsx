@@ -1,239 +1,208 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Filter,
-  Download,
-  Loader2,
-  CreditCard,
-  Wallet,
-  Calendar,
-} from "lucide-react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Receipt, ArrowRight, ExternalLink, Clock } from "lucide-react";
+import { Link } from "react-router";
+import { getMyTransactions } from "../../../api/transactions.api";
 import { useAuth } from "../../../hooks/useAuth";
-import api from "../../../api/auth.api";
+import Card from "../../../components/ui/Card";
+import StatusPill from "../../../components/ui/StatusPill";
+import EmptyState from "../../../components/ui/EmptyState";
+import { RowSkeleton } from "../../../components/ui/Skeleton";
+import Pagination from "../../../components/ui/Pagination";
 
-// --- Utility: Format Currency ---
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
-
-// --- Utility: Format Date ---
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+const STATUS_FILTERS = [
+  { id: "all", label: "All Records" },
+  { id: "pending", label: "Pending" },
+  { id: "completed", label: "Completed" },
+];
 
 export default function MyTransactions() {
-  const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all"); 
-  const {
-    data: transactions,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["my-transactions"],
-    queryFn: async () => {
-      const res = await api.get("/transactions/my-transactions");
-      return res.data.data;
-    },
+  const { user } = useAuth(); // Inject Auth Context
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["transactions", "mine", page, statusFilter],
+    queryFn: () => getMyTransactions({ 
+      page, 
+      limit: 12, 
+      status: statusFilter === "all" ? undefined : statusFilter 
+    }),
   });
 
-  
-  const isIncoming = (tx) => {
-   
-    return tx.to_id === user.user_id && tx.to_role === user.role;
-  };
-
-  // 3. Filtering
-  const filteredTransactions = transactions?.filter((tx) => {
-    const incoming = isIncoming(tx);
-    const matchesSearch =
-      tx.reference_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tx.transaction_type?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (filterType === "credit") return matchesSearch && incoming;
-    if (filterType === "debit") return matchesSearch && !incoming;
-    return matchesSearch;
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex h-96 w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-96 w-full flex-col items-center justify-center text-center">
-        <Wallet className="h-12 w-12 text-zinc-300 mb-4" />
-        <h3 className="text-lg font-semibold text-zinc-900">
-          Failed to load history
-        </h3>
-        <p className="text-zinc-500 max-w-sm">
-          We couldn't retrieve your transaction records. Please try again later.
-        </p>
-      </div>
-    );
-  }
+  const transactions = data?.data ?? [];
+  const pagination = data?.pagination;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="max-w-7xl mx-auto animate-in fade-in duration-300">
+      
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-            Transaction History
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Track your payments, commissions, and refunds.
-          </p>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-muted mb-2">Financial Flow</p>
+          <h1 className="font-display font-semibold text-2xl text-ink">My Transactions</h1>
         </div>
-        <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 transition-colors">
-          <Download size={16} />
-          Export CSV
-        </button>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm border border-zinc-100 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-2.5 h-5 w-5 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Search by Reference ID or Type..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-11 pr-4 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-zinc-400" />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="h-10 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
-          >
-            <option value="all">All Transactions</option>
-            <option value="credit">Incoming (Credit)</option>
-            <option value="debit">Outgoing (Debit)</option>
-          </select>
+        <div className="flex bg-paper-dim p-1 rounded-lg border border-line w-max">
+          {STATUS_FILTERS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setStatusFilter(tab.id);
+                setPage(1);
+              }}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                statusFilter === tab.id
+                  ? "bg-white text-ink shadow-sm border border-line"
+                  : "text-ink-soft hover:text-ink"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Transactions List */}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-        {filteredTransactions?.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center bg-zinc-50/50">
-            <CreditCard className="h-10 w-10 text-zinc-300 mb-2" />
-            <p className="text-zinc-500 font-medium">No transactions found.</p>
+      <Card className="overflow-hidden">
+        {isLoading ? (
+          <div className="p-4 divide-y divide-line">
+            <RowSkeleton /><RowSkeleton /><RowSkeleton />
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="p-8">
+            <EmptyState 
+              icon={Receipt} 
+              title="No transaction history" 
+              description={statusFilter === "all" ? "Your localized financial ledger is currently empty." : `No ${statusFilter} transactions found in your ledger.`} 
+            />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 uppercase text-xs font-semibold tracking-wider">
-                <tr>
-                  <th className="px-6 py-4">Transaction</th>
-                  <th className="px-6 py-4">Reference</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Amount</th>
-                  <th className="px-6 py-4 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                <AnimatePresence>
-                  {filteredTransactions.map((tx) => {
-                    const incoming = isIncoming(tx);
+          <>
+            {/* Desktop View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="bg-paper-dim border-b border-line text-xs uppercase font-mono tracking-widest text-ink-muted">
+                  <tr>
+                    <th className="px-5 py-3.5 font-medium">Txn ID</th>
+                    <th className="px-5 py-3.5 font-medium">Counterparty</th>
+                    <th className="px-5 py-3.5 font-medium">Reference</th>
+                    <th className="px-5 py-3.5 font-medium text-right">Amount</th>
+                    <th className="px-5 py-3.5 font-medium text-center">Status</th>
+                    <th className="px-5 py-3.5 font-medium text-right">Execution</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line text-ink">
+                  {transactions.map((tx) => {
+                    const isPayer = user?.user_id === tx.from_id;
+
                     return (
-                      <motion.tr
-                        key={tx.transaction_id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="hover:bg-zinc-50/50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                incoming
-                                  ? "bg-emerald-100 text-emerald-600"
-                                  : "bg-rose-100 text-rose-600"
-                              }`}
-                            >
-                              {incoming ? (
-                                <ArrowDownLeft size={20} />
-                              ) : (
-                                <ArrowUpRight size={20} />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-zinc-900 capitalize">
-                                {tx.transaction_type.replace("_", " ")}
-                              </p>
-                              <p className="text-xs text-zinc-500 capitalize">
-                                Via {tx.payment_method}
-                              </p>
-                            </div>
-                          </div>
+                      <tr key={tx.transaction_id} className="hover:bg-paper-dim/40 transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="font-mono text-xs text-ink-soft">{tx.reference_id || `TXN-${tx.transaction_id}`}</p>
+                          <p className="text-[10px] text-ink-muted mt-0.5">{new Date(tx.transaction_time).toLocaleDateString()}</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-xs text-zinc-600 bg-zinc-100 px-2 py-1 rounded">
-                            {tx.reference_id || "N/A"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-zinc-600">
+                        <td className="px-5 py-3">
                           <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-zinc-400" />
-                            {formatDate(tx.transaction_time)}
+                            <span className="text-ink-soft capitalize text-xs bg-paper-dim px-2 py-0.5 rounded border border-line">
+                              {tx.counterparty_role.replace("_", " ")}
+                            </span>
+                            <span className="font-medium text-ink">{tx.counterparty_name}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`font-bold ${
-                              incoming ? "text-emerald-600" : "text-zinc-900"
-                            }`}
-                          >
-                            {incoming ? "+" : "-"}
-                            {formatCurrency(tx.amount)}
-                          </span>
+                        <td className="px-5 py-3 text-ink-soft">
+                          <p className="truncate max-w-[200px] font-medium text-ink">{tx.product_name || "N/A"}</p>
+                          <p className="text-[11px] text-ink-muted capitalize mt-0.5">{tx.transaction_type.replace("_", " ")}</p>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize
-                            ${
-                              tx.status === "completed"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : tx.status === "pending"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {tx.status}
-                          </span>
+                        <td className="px-5 py-3 font-mono font-tabular font-medium text-right text-ink">
+                          ${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
-                      </motion.tr>
+                        <td className="px-5 py-3 text-center">
+                          <StatusPill status={tx.status} />
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          {/* Role-Based Execution Rendering */}
+                          {tx.status === 'pending' && isPayer ? (
+                            <Link to={`/dashboard/checkout/${tx.transaction_id}`}>
+                              <button className="h-8 px-3 text-xs font-medium inline-flex items-center justify-center rounded bg-accent text-white hover:bg-accent-hover transition-colors shadow-sm">
+                                Pay <ArrowRight size={14} className="ml-1" />
+                              </button>
+                            </Link>
+                          ) : tx.status === 'pending' && !isPayer ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-muted bg-paper-dim px-2 py-1 rounded">
+                              <Clock size={10} /> Awaiting Buyer
+                            </span>
+                          ) : null}
+                        </td>
+                      </tr>
                     );
                   })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="block md:hidden divide-y divide-line">
+              {transactions.map((tx) => {
+                const isPayer = user?.user_id === tx.from_id;
+
+                return (
+                  <div key={tx.transaction_id} className="p-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-ink truncate max-w-[200px]">{tx.product_name || "N/A"}</p>
+                        <p className="font-mono text-xs text-ink-soft mt-0.5">{tx.reference_id || `TXN-${tx.transaction_id}`}</p>
+                      </div>
+                      <StatusPill status={tx.status} />
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase tracking-wider text-ink-muted mb-0.5">Counterparty</span>
+                        <span className="font-medium text-ink flex items-center gap-1.5">
+                          {tx.counterparty_name}
+                          <span className="text-[9px] bg-paper-dim border border-line px-1.5 rounded text-ink-soft capitalize">
+                            {tx.counterparty_role.replace("_", " ")}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] uppercase tracking-wider text-ink-muted mb-0.5">
+                          {tx.transaction_type.replace("_", " ")}
+                        </span>
+                        <span className="font-mono font-tabular font-medium text-ink">
+                          ${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-line mt-1">
+                      <span className="text-xs text-ink-muted">{new Date(tx.transaction_time).toLocaleDateString()}</span>
+                      
+                      {/* Role-Based Execution Rendering */}
+                      {tx.status === 'pending' && isPayer ? (
+                        <Link to={`/dashboard/checkout/${tx.transaction_id}`}>
+                          <button className="h-7 px-3 text-xs font-medium inline-flex items-center justify-center rounded bg-accent text-white hover:bg-accent-hover transition-colors shadow-sm">
+                            Execute Payment <ArrowRight size={12} className="ml-1" />
+                          </button>
+                        </Link>
+                      ) : tx.status === 'pending' && !isPayer ? (
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-ink-soft">
+                          Awaiting Buyer Payment
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
-      </div>
+      </Card>
+      
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-6 border-t border-line pt-6">
+          <Pagination page={pagination.page} totalPages={pagination.totalPages} onChange={setPage} />
+        </div>
+      )}
     </div>
   );
 }

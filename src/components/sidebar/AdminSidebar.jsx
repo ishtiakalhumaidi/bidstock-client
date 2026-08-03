@@ -1,195 +1,135 @@
-import React from "react";
-import { Link, NavLink, useNavigate } from "react-router";
+import { NavLink, useNavigate } from "react-router";
+import clsx from "clsx";
 import {
-  LayoutDashboard,
-  Gavel,
-  Package,
-  Warehouse,
-  CreditCard,
-  Users,
-  LogOut,
-  User,
+  Gauge,
+  LayoutGrid,
   PackagePlus,
-  Wallet,
-  Key,
-  ShoppingBag // Added icon
+  Package,
+  Gavel,
+  Warehouse,
+  WarehouseIcon,
+  ClipboardList,
+  Boxes,
+  Receipt,
+  Inbox,
+  User,
+  LogOut,
+  Handshake,
+  Bell,
+  Users,
+  ShieldAlert
 } from "lucide-react";
-import Logo from "../common/Logo";
 import { useAuth } from "../../hooks/useAuth";
 
-export default function AdminSidebar({ className }) {
+const NAV_BY_ROLE = {
+  seller: [
+    { to: "add-product", label: "Add product", icon: PackagePlus },
+    { to: "my-products", label: "My products", icon: Package },
+    { to: "my-auctions", label: "My auctions", icon: Gavel },
+    { to: "transaction-requests", label: "Offer requests", icon: Handshake },
+    { to: "my-rents", label: "My rents", icon: ClipboardList },
+    { to: "my-inventory", label: "My inventory", icon: Boxes },
+  ],
+  buyer: [
+    { to: "my-offers", label: "My offers", icon: Inbox }
+  ],
+  warehouse_owner: [
+    { to: "add-warehouse", label: "Add warehouse", icon: WarehouseIcon },
+    { to: "my-warehouses", label: "My warehouses", icon: Warehouse },
+    { to: "stored-inventory", label: "Stored inventory", icon: Boxes },
+  ],
+  admin: [
+    { to: "users", label: "Users", icon: Users },
+    { to: "all-transactions", label: "All transactions", icon: Receipt },
+    { to: "all-auctions", label: "All auctions", icon: Gavel },
+    { to: "all-warehouses", label: "All warehouses", icon: Warehouse },
+    { to: "all-products", label: "All products", icon: Package },
+  ],
+};
+
+export default function AdminSidebar({ className = "", onNavigate }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const roleLinks = NAV_BY_ROLE[user?.role] || [];
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/auth/signin");
   };
 
-  const navItems = [
-    { 
-      name: "Overview", 
-      href: "/dashboard", 
-      icon: LayoutDashboard, 
-      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
-    },
-    { 
-      name: "User Management", 
-      href: "/dashboard/users", 
-      icon: Users, 
-      roles: ['admin'] 
-    },
-    { 
-      name: "Global Inventory", 
-      href: "/dashboard/inventory", 
-      icon: Package, 
-      roles: ['admin'] 
-    },
-    
-    // --- Seller Specific ---
-    { 
-      name: "Add Product", 
-      href: "/dashboard/add-product", 
-      icon: PackagePlus,
-      roles: ['seller'] 
-    },
-    { 
-      name: "My Products", 
-      href: "/dashboard/my-product", 
-      icon: Package, 
-      roles: ['seller'] 
-    },
-    { 
-      name: "My Inventory", 
-      href: "/dashboard/my-inventories", 
-      icon: Package, 
-      roles: ['seller'] 
-    },
-    { 
-      name: "My Auctions", 
-      href: "/dashboard/my-auctions", 
-      icon: Gavel, 
-      roles: ['seller'] 
-    },
-    { 
-      name: "Rent Warehouse", 
-      href: "/warehouses", 
-      icon: Warehouse, 
-      roles: ['seller'] 
-    },
-    { 
-      name: "My Rents", 
-      href: "/dashboard/my-rents", 
-      icon: Key, 
-      roles: ['seller'] 
-    },
-
-    // --- Warehouse Owner Specific ---
-    { 
-      name: "My Warehouses", 
-      href: "/dashboard/my-warehouses", 
-      icon: Warehouse, 
-      roles: ['warehouse_owner'] 
-    },
-    { 
-      name: "Add Warehouse", 
-      href: "/dashboard/add-warehouse", 
-      icon: Warehouse, 
-      roles: ['warehouse_owner'] 
-    },
-
-    // --- Buyer Specific ---
-    { 
-      name: "My Offers", 
-      href: "/dashboard/my-offers", 
-      icon: ShoppingBag, 
-      roles: ['buyer'] 
-    },
-
-    // --- Financials & Common ---
-    { 
-      name: "Payment Requests", 
-      href: "/dashboard/transactions-requests", 
-      icon: Wallet, 
-      roles: ['buyer', 'seller'] 
-    },
-    { 
-      name: "Transaction History", 
-      href: "/dashboard/my-transactions", 
-      icon: CreditCard, 
-      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
-    },
-    { 
-      name: "My Profile", 
-      href: "/dashboard/my-profile", 
-      icon: User, 
-      roles: ['admin', 'seller', 'buyer', 'warehouse_owner'] 
-    },
-  ];
-
-  const filteredNavItems = navItems.filter((item) => 
-    item.roles.includes(user?.role)
-  );
-
   return (
-    <aside
-      className={`flex flex-col h-full bg-white border-r border-zinc-200 w-64 ${className}`}
-    >
-      {/* Brand Logo Area */}
-      <Link
-        to={"/"}
-        className="h-16 flex items-center px-6 border-b border-zinc-100"
-      >
-        <Logo />
-      </Link>
+    <aside className={clsx("w-full h-full bg-ink text-paper flex flex-col shadow-2xl", className)}>
+      <a href="/" className="h-16 flex items-center gap-3 px-6 border-b border-white/10 shrink-0">
+        <span className="h-8 w-8 rounded-lg bg-amber flex items-center justify-center shadow-inner">
+          <Gauge size={18} className="text-ink" />
+        </span>
+        <span className="font-display font-bold text-lg tracking-tight">BidStock</span>
+      </a>
+      
 
-      {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-        {filteredNavItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.href}
-            end={item.href === "/dashboard"}
-            className={({ isActive }) => `
-              flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-              ${isActive
-                ? "bg-rose-50 text-rose-700 shadow-sm"
-                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
-              }
-            `}
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon
-                  size={18}
-                  className={isActive ? "text-rose-600" : "text-zinc-400"}
-                  strokeWidth={2}
-                />
-                {item.name}
-              </>
-            )}
+      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-8 custom-scrollbar">
+        
+        {/* Core Overview */}
+        <div className="space-y-1">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-white/40 px-3 mb-2">Overview</p>
+          <NavLink to="/dashboard" end onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+            <LayoutGrid size={16} />
+            Dashboard
           </NavLink>
-        ))}
+        </div>
+
+        {/* Role Specific Actions */}
+        {roleLinks.length > 0 && (
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-white/40 px-3 mb-2 flex items-center gap-1.5">
+              {user?.role === 'admin' && <ShieldAlert size={10} />}
+              {user?.role?.replace("_", " ")}
+            </p>
+            {roleLinks.map((item) => (
+              <NavLink key={item.to} to={item.to} onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+                <item.icon size={16} />
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+        )}
+
+        {/* Global Account */}
+        <div className="space-y-1">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-white/40 px-3 mb-2">Account</p>
+          <NavLink to="my-transactions" onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+            <Receipt size={16} />
+            Ledger
+          </NavLink>
+          <NavLink to="notifications" onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+            <Bell size={16} />
+            Notifications
+          </NavLink>
+          <NavLink to="my-profile" onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+            <User size={16} />
+            Profile
+          </NavLink>
+        </div>
       </nav>
 
-      {/* Footer / Logout */}
-      <div className="p-4 border-t border-zinc-100">
-        <div className="mb-4 px-3">
-            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                Logged in as
-            </p>
-            <p className="text-sm font-bold text-zinc-900 capitalize">
-                {user?.role?.replace('_', ' ')}
-            </p>
-        </div>
+      <div className="p-4 border-t border-white/10 shrink-0 bg-ink-soft/10">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-red hover:bg-red/10 transition-colors"
         >
-          <LogOut size={18} />
-          Sign Out
+          <LogOut size={16} />
+          Secure Sign Out
         </button>
       </div>
     </aside>
+  );
+}
+
+function linkClass(isActive) {
+  return clsx(
+    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+    isActive 
+      ? "bg-amber text-ink shadow-md" 
+      : "text-white/60 hover:text-paper hover:bg-white/10"
   );
 }

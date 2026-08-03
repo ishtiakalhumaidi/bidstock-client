@@ -1,154 +1,137 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { useForm } from 'react-hook-form';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  ArrowLeft, Clock, MapPin, Gavel, User, AlertCircle, Loader2, CheckCircle 
-} from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import api from '../../api/auth.api';
-
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Gavel, ArrowLeft, ShieldCheck } from "lucide-react";
+import { getSingleBid } from "../../api/bids.api";
+import { useAuth } from "../../hooks/useAuth";
+import Button from "../../components/ui/Button";
+import CountdownChip from "../../components/ui/CountdownChip";
+import PlaceOfferModal from "../../components/auctions/PlaceOfferModal";
 
 export default function BidDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
-  const { data: bid, isLoading, isError } = useQuery({
-    queryKey: ['bid', id],
-    queryFn: async () => {
-      const res = await api.get(`/bids/${id}`);
-      return res.data.data;
-    }
+  const { user, isAuthenticated } = useAuth();
+  const [offering, setOffering] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["bids", id],
+    queryFn: () => getSingleBid(id),
   });
 
-  // 2. Offer Mutation
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
-  
-  const mutation = useMutation({
-    mutationFn: (data) => api.post('/offers', {
-      bid_id: id,
-      offered_price: parseFloat(data.amount)
-    }),
-    onSuccess: () => {
-      alert("Offer placed successfully!");
-      queryClient.invalidateQueries(['bid', id]); // Refresh current price
-      reset();
-    },
-    onError: (err) => {
-      alert(err.response?.data?.message || "Failed to place offer");
-    }
-  });
+  // Extract the inner 'data' object from the API response
+  const auction = data?.data;
+  if (isLoading)
+    return <div className="min-h-screen animate-pulse bg-paper-dim" />;
+  if (!auction)
+    return (
+      <div className="min-h-screen flex items-center justify-center font-display text-ink text-xl">
+        Auction not found
+      </div>
+    );
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-rose-600" size={40}/></div>;
-  if (isError) return <div className="text-center p-20 text-red-500">Bid not found.</div>;
-
-  const currentPrice = bid.highest_bid ? parseFloat(bid.highest_bid) : parseFloat(bid.base_price);
-  const isOwner = user?.user_id === bid.seller_id;
-  const isBuyer = user?.role === 'buyer';
+  const currentPrice = Number(auction.highest_bid || auction.base_price);
+  const isSeller =
+    user?.role === "seller" && user?.user_id === auction.seller_id;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors font-medium"
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink transition-colors mb-6"
       >
-        <ArrowLeft size={18} /> Back to Auctions
+        <ArrowLeft size={16} /> Back to floor
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* LEFT COL: Image & Description */}
-        <div className="space-y-6">
-          <div className="aspect-[4/3] bg-zinc-100 rounded-3xl overflow-hidden border border-zinc-200 shadow-sm relative">
-             {bid.image_url ? (
-               <img src={bid.image_url} alt={bid.product_name} className="w-full h-full object-cover" />
-             ) : (
-               <div className="w-full h-full flex items-center justify-center text-zinc-300 bg-zinc-50">No Image</div>
-             )}
-             <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center gap-2">
-                <Clock size={14} className="text-rose-600"/> 
-                Ends: {new Date(bid.end_time).toLocaleDateString()}
-             </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm">
-             <h3 className="text-lg font-bold text-zinc-900 mb-3">Description</h3>
-             <p className="text-zinc-600 leading-relaxed whitespace-pre-wrap">
-               {bid.description || "No description provided."}
-             </p>
-          </div>
+      <div className="bg-white border border-line rounded-2xl overflow-hidden shadow-sm flex flex-col md:flex-row">
+        <div className="md:w-1/2 bg-paper-dim aspect-square md:aspect-auto flex items-center justify-center border-b md:border-b-0 md:border-r border-line p-6">
+          {auction.image_url ? (
+            <img
+              src={auction.image_url}
+              alt={auction.product_name}
+              className="max-h-full max-w-full object-contain mix-blend-multiply"
+            />
+          ) : (
+            <Gavel size={64} className="text-ink-muted/50" />
+          )}
         </div>
 
-        {/* RIGHT COL: Bidding & Info */}
-        <div className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/50">
-             <div className="mb-6">
-               <h1 className="text-3xl font-black text-zinc-900 mb-2">{bid.product_name}</h1>
-               <div className="flex items-center gap-2 text-zinc-500">
-                  <User size={16} /> <span className="font-medium">{bid.seller_name}</span>
-               </div>
-             </div>
+        <div className="md:w-1/2 p-6 md:p-8 flex flex-col">
+          <div className="mb-4">
+            <CountdownChip endTime={auction.end_time} className="mb-3" />
+            <h1 className="font-display font-semibold text-2xl md:text-3xl text-ink leading-tight mb-2">
+              {auction.product_name}
+            </h1>
+            <p className="text-sm text-ink-muted">
+              Listed by {auction.seller_name}
+            </p>
+          </div>
 
-             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-100 mb-8">
-                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">Current Highest Bid</p>
-                <div className="flex items-baseline gap-2">
-                   <span className="text-4xl font-black text-rose-600">${currentPrice.toLocaleString()}</span>
-                   <span className="text-sm text-zinc-500 font-medium">USD</span>
-                </div>
-                <p className="text-xs text-zinc-400 mt-2">Base Price: ${bid.base_price}</p>
-             </div>
+          <div className="py-5 border-y border-line my-2">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-muted mb-1">
+              {auction.highest_bid ? "Current highest offer" : "Starting price"}
+            </p>
+            <p className="font-mono font-tabular font-semibold text-4xl text-ink">
+              ${currentPrice.toLocaleString()}
+            </p>
+            <p className="text-sm font-medium text-ink-soft mt-2">
+              {auction.pending_offers} pending offer
+              {auction.pending_offers !== 1 ? "s" : ""}
+            </p>
+          </div>
 
-             {/* Bidding Form */}
-             {isBuyer ? (
-               <form onSubmit={handleSubmit(mutation.mutate)} className="space-y-4">
-                 <div className="space-y-2">
-                   <label className="text-sm font-bold text-zinc-700">Place Your Bid</label>
-                   <div className="relative">
-                     <span className="absolute left-4 top-3.5 text-zinc-400 font-bold">$</span>
-                     <input 
-                       type="number" 
-                       step="0.01"
-                       placeholder={(currentPrice + 10).toFixed(2)}
-                       {...register("amount", { 
-                         required: "Amount is required",
-                         validate: val => parseFloat(val) > currentPrice || "Bid must be higher than current price"
-                       })}
-                       className="w-full pl-8 pr-4 py-3.5 border border-zinc-300 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none font-bold text-lg"
-                     />
-                   </div>
-                   {errors.amount && (
-                     <p className="text-xs text-red-500 flex items-center gap-1 font-medium">
-                       <AlertCircle size={12}/> {errors.amount.message}
-                     </p>
-                   )}
-                 </div>
+          <div className="mt-4 mb-8">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-muted mb-2">
+              Description
+            </p>
+            <p className="text-sm text-ink-soft leading-relaxed">
+              {auction.description ||
+                "No specific details provided for this lot."}
+            </p>
+          </div>
 
-                 <button 
-                   type="submit" 
-                   disabled={mutation.isPending}
-                   className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl shadow-lg shadow-zinc-900/20 transition-all flex items-center justify-center gap-2"
-                 >
-                   {mutation.isPending ? <Loader2 className="animate-spin"/> : <Gavel size={20} />}
-                   Confirm Bid
-                 </button>
-                 <p className="text-xs text-center text-zinc-400">
-                   By clicking confirm, you commit to buying this item if you win.
-                 </p>
-               </form>
-             ) : isOwner ? (
-                <div className="p-4 bg-blue-50 text-blue-700 rounded-xl font-medium text-center">
-                   You are the seller of this item.
-                </div>
-             ) : (
-                <div className="p-4 bg-zinc-100 text-zinc-500 rounded-xl font-medium text-center">
-                   Log in as a Buyer to bid.
-                </div>
-             )}
+          <div className="mt-auto pt-6">
+            {!isAuthenticated ? (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/auth/signin")}
+              >
+                Sign in to bid
+              </Button>
+            ) : user?.role === "buyer" ? (
+              <Button
+                variant="accent"
+                size="lg"
+                className="w-full"
+                onClick={() => setOffering(true)}
+                disabled={auction.status !== "open"}
+              >
+                {auction.status === "open" ? "Place Offer" : "Auction Closed"}
+              </Button>
+            ) : isSeller ? (
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => navigate(`/dashboard/my-auctions`)}
+              >
+                Manage in Dashboard
+              </Button>
+            ) : (
+              <div className="bg-paper-dim rounded-lg p-3 text-center text-sm text-ink-soft flex items-center justify-center gap-2">
+                <ShieldCheck size={16} /> Only verified buyers can place offers.
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      <PlaceOfferModal
+        auction={auction}
+        open={offering}
+        onClose={() => setOffering(false)}
+        currentPrice={currentPrice}
+      />
     </div>
   );
 }

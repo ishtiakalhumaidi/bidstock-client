@@ -1,19 +1,19 @@
-import React from 'react';
-import { Package2 } from 'lucide-react';
+import { Link } from "react-router";
+import { Gauge } from "lucide-react";
 
-const Logo = ({ className }) => {
-    return (
-        <div className={`flex items-center gap-2.5 ${className}`}>
-            {/* Icon Container */}
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 shadow-sm shadow-rose-500/20">
-                <Package2 className="h-5 w-5 text-white" strokeWidth={2.5} />
-            </div>
-            {/* Text */}
-            <span className="text-2xl font-bold tracking-tight text-zinc-900">
-                BidStock<span className="text-rose-600">.</span>
-            </span>
-        </div>
-    );
-};
+export default function Logo({ to = "/", size = "md" }) {
+  const iconBox = size === "sm" ? "h-7 w-7" : "h-9 w-9";
+  const iconSize = size === "sm" ? 14 : 18;
+  const textSize = size === "sm" ? "text-base" : "text-xl";
 
-export default Logo;
+  return (
+    <Link to={to} className="inline-flex items-center gap-2 group">
+      <span className={`${iconBox} rounded-lg bg-ink flex items-center justify-center transition-transform duration-200 group-hover:rotate-[-6deg]`}>
+        <Gauge size={iconSize} className="text-amber" />
+      </span>
+      <span className={`font-display font-semibold ${textSize} tracking-tight text-ink`}>
+        BidStock
+      </span>
+    </Link>
+  );
+}
